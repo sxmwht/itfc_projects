@@ -1,0 +1,12 @@
+For each team, look at the teams within 3 points either way
+
+3 points above - 
+  - Check the GD between the team(s) +3pts. This gives an initial estimate
+  - If none of the teams in the +3pt range are playing against each other, then
+    the initial estimate is correct?
+  - If some of the teams in the +3pt range are playing each other and one of them is +2pts, then check the GD against those teams. This may affect the MAXIMUM place
+
+3 points below -
+  
+
+
