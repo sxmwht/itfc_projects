@@ -31,16 +31,16 @@ for f in upcoming_match_block.find_all(class_=is_fixture):
 
 teams_to_check = [team for match in fixtures for team in match]
 
-
-
-
 # get the current table (thanks Gav)
 current_table = pd.read_html("https://www.twtd.co.uk/league-tables/", index_col=0, header=0)[1]
 current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
 
 # we know team #1 can't go higher
-current_table.loc[1, "Max pos"]    = 1
-current_table.loc[1, "GD Max pos"] = 1
+for i in range(1,25):
+    current_table.loc[i, "Max pos"]      = i
+    current_table.loc[i, "GD Max pos"]   = i
+    current_table.loc[i, "Max poss pos"] = i
+
 # look at each row in turn, find max position
 for t in teams_to_check:
     pts           = current_table.loc[current_table.Team == t].Pts.values[0]
