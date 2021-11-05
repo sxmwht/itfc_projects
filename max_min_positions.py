@@ -82,5 +82,70 @@ for i in range(1,25):
     current_table.loc[i, "Min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["Max pos"] <= i])
     current_table.loc[i, "GD min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["GD Max pos"] <= i])
 
-print(current_table)
+#display(current_table.style)
+
+
+# now we want to create a new dataframe. There will be a column for each team,
+# and we iterate through the elements and fill them in with a suitable
+# character
+
+#print(current_table)
+
+#print(current_table.loc[1])
+
+graph = []
+
+# priority
+# current position
+# impossible position
+
+for t in range(1,25): 
+    graph.append([])
+    abs_max_pos    = current_table.loc[t, "Max pos"]
+    max_poss_pos   = current_table.loc[t, "Max poss pos"]
+    likely_max_pos = current_table.loc[t, "GD Max pos"]
+    min_pos        = current_table.loc[t, "Min pos"]
+    likely_min_pos = current_table.loc[t, "GD min pos"]
+
+    for pos in range(1,25):
+        if pos == t: 
+            char = "C"
+        elif pos < t:
+            if pos < abs_max_pos:
+                char = " "
+            else: 
+                if pos < max_poss_pos:
+                    char = "x"
+                else: 
+                    if pos == max_poss_pos:
+                        char = "o"
+                    else: 
+                        if pos < likely_max_pos:
+                            char = "|"
+                        else:
+                            char = "||"
+        else:
+            if pos < likely_min_pos:
+                char = "||"
+            else:
+                if pos < min_pos:
+                    char = "|"
+                else:
+                    if pos == min_pos:
+                        char = "o"
+                    else:
+                        char = " "
+
+        graph[-1].append(char)
+    #print(graph[-1])
+
+df = pd.DataFrame({})
+
+df[0] = current_table.Team
+for i in range(1,25):
+    df[i] = (graph[i-1])
+
+
+#print(df)
+display(df.style)
 
