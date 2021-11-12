@@ -4,11 +4,17 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup as bs
 import re
+import sys
 
 # get the upcoming fixtures
-fixtures_url = "https://www.bbc.co.uk/sport/football/league-one/scores-fixtures"
+try:
+    if (sys.argv[1] == "-d"):
+        data = open("debug.html").read()
+except: 
+    fixtures_url = "https://www.bbc.co.uk/sport/football/league-one/scores-fixtures"
 
-data = requests.get(fixtures_url).text
+    data = requests.get(fixtures_url).text
+
 soup = bs(data, "html.parser")
 
 def is_match_block(cls):
@@ -22,14 +28,24 @@ def is_team(class_):
 
 upcoming_match_block = soup.find(class_=is_match_block)
 
-print(upcoming_match_block.find("h3").string)
+try:
+    print(upcoming_match_block.find("h3").string)
+except:
+    pass
 
 fixtures = []
 for f in upcoming_match_block.find_all(class_=is_fixture):
-    match = [t.string for t in f.find_all(class_=is_team)]
-    fixtures.append(match)
+    # only handle matches that aren't postponed
+    if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
+        match = [t.string for t in f.find_all(class_=is_team)]
+        fixtures.append(match)
 
 teams_to_check = [team for match in fixtures for team in match]
+
+try:
+    teams_to_check[teams_to_check.index("Milton Keynes Dons")] = "MK Dons"
+except:
+    pass
 
 # get the current table (thanks Gav)
 current_table = pd.read_html("https://www.twtd.co.uk/league-tables/", index_col=0, header=0)[1]
@@ -82,14 +98,11 @@ for i in range(1,25):
     current_table.loc[i, "Min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["Max pos"] <= i])
     current_table.loc[i, "GD min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["GD Max pos"] <= i])
 
-#display(current_table.style)
-
+display(current_table.style)
 
 # now we want to create a new dataframe. There will be a column for each team,
 # and we iterate through the elements and fill them in with a suitable
 # character
-
-#print(current_table)
 
 #print(current_table.loc[1])
 
@@ -109,32 +122,55 @@ for t in range(1,25):
 
     for pos in range(1,25):
         if pos == t: 
-            char = "C"
+            char = '<img src="img/current.png"></img>'
         elif pos < t:
             if pos < abs_max_pos:
                 char = " "
             else: 
                 if pos < max_poss_pos:
-                    char = "x"
+                    char = '<img src="img/impossible.png"></img>'
                 else: 
                     if pos == max_poss_pos:
-                        char = "o"
+                        if max_poss_pos == likely_max_pos:
+                            char = '<img src="img/likely_top.png"></img>'
+                        else:
+                            char = '<img src="img/unlikely_top.png"></img>'
                     else: 
                         if pos < likely_max_pos:
-                            char = "|"
+                            char =  '<img src="img/unlikely_move.png"></img>'
                         else:
-                            char = "||"
+                            char =   '<img src="img/likely_move.png"></img>'
         else:
-            if pos < likely_min_pos:
-                char = "||"
-            else:
-                if pos < min_pos:
-                    char = "|"
-                else:
-                    if pos == min_pos:
-                        char = "o"
+            if pos > min_pos:
+                char = " "
+            else: 
+                if pos == min_pos:
+                    if min_pos != likely_min_pos:
+                        char = '<img src="img/unlikely_bottom.png"></img>' 
                     else:
-                        char = " "
+                        char = '<img src="img/likely_bottom.png"></img>' 
+                else:
+                    if pos > likely_min_pos:
+                        char = '<img src="img/unlikely_move.png"></img>'
+                    else:
+                        char = '<img src="img/likely_move.png"></img>'
+
+
+
+
+#            if pos <= likely_min_pos:
+#                char = '<img src="img/likely_move.png"></img>'
+#            else:
+#                if pos < min_pos:
+#                    char = '<img src="img/unlikely_move.png"></img>'
+#                else:
+#                    if pos == min_pos:
+#                        if min_pos != likely_min_pos:
+#                            char = '<img src="img/unlikely_bottom.png"></img>' 
+#                        else:
+#                            char = "o"
+#                    else:
+#                        char = " "
 
         graph[-1].append(char)
     #print(graph[-1])
@@ -145,6 +181,7 @@ df[0] = current_table.Team
 for i in range(1,25):
     df[i] = (graph[i-1])
 
+df.style.set_table_styles([{'selector': 'tr', 'props':'height: 200px'}])
 
 #print(df)
 display(df.style)
