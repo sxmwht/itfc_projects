@@ -98,8 +98,6 @@ for i in range(1,25):
     current_table.loc[i, "Min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["Max pos"] <= i])
     current_table.loc[i, "GD min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["GD Max pos"] <= i])
 
-#display(current_table.style)
-
 # now we want to create a new dataframe. There will be a column for each team,
 # and we iterate through the elements and fill them in with a suitable
 # character
@@ -151,9 +149,9 @@ for t in range(1,25):
                         char = '<img src="img/likely_bottom.png"></img>' 
                 else:
                     if pos > likely_min_pos:
-                        char = '<img src="img/unlikely_move.png"></img>'
+                        char = '<img src="img/unlikely_move_down.png"></img>'
                     else:
-                        char = '<img src="img/likely_move.png"></img>'
+                        char = '<img src="img/likely_move_down.png"></img>'
 
 
 
@@ -181,8 +179,8 @@ df[0] = current_table.Team
 for i in range(1,25):
     df[i] = (graph[i-1])
 
-df.style.set_table_styles([{'selector': 'tr', 'props':'height: 200px'}])
-
-#print(df)
-display(df.style)
+display(df.style.set_table_styles([
+    {'selector':'td', 'props':'padding: 0px 10px 0px 0px;'},
+    {'selector':'th', 'props':'padding: 0px 10px;'}
+    ]))
 
