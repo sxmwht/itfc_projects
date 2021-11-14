@@ -98,7 +98,7 @@ for i in range(1,25):
     current_table.loc[i, "Min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["Max pos"] <= i])
     current_table.loc[i, "GD min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["GD Max pos"] <= i])
 
-display(current_table.style)
+#display(current_table.style)
 
 # now we want to create a new dataframe. There will be a column for each team,
 # and we iterate through the elements and fill them in with a suitable
