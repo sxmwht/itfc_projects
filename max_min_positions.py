@@ -172,10 +172,5 @@ styled_table = df.style.set_table_styles([
     ])
 
 #display(styled_table)
-print(styled_table.to_html)
-f=open("output_table.html", "w")
-f.write(styled_table.to_html())
-f.close
-
 imgkit.from_string(styled_table.to_html(), "out.jpg", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'681'})
 
