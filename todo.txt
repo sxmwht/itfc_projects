@@ -1,7 +1,5 @@
 Would be nice to have an interactive, HTML version (could go on a blog?)
 
-Purples don't match
-
 Images don't load in Jupyter when creating images, and vice versa
 
 Need to actually check the algorithm to ensure that the table is correct!
