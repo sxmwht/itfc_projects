@@ -5,6 +5,8 @@ import pandas as pd
 from bs4 import BeautifulSoup as bs
 import re
 import sys
+import imgkit
+import os
 
 # get the upcoming fixtures
 try:
@@ -120,58 +122,40 @@ for t in range(1,25):
 
     for pos in range(1,25):
         if pos == t: 
-            char = '<img src="img/current.png"></img>'
+            char = '<img src="{}"></img>'.format(os.path.abspath("./img/current.png"))
         elif pos < t:
             if pos < abs_max_pos:
                 char = " "
             else: 
                 if pos < max_poss_pos:
-                    char = '<img src="img/impossible.png"></img>'
+                    char = '<img src="{}"></img>'.format(os.path.abspath("./img/impossible.png"))
                 else: 
                     if pos == max_poss_pos:
                         if max_poss_pos == likely_max_pos:
-                            char = '<img src="img/likely_top.png"></img>'
+                            char = '<img src="{}"></img>'.format(os.path.abspath("./img/likely_top.png"))
                         else:
-                            char = '<img src="img/unlikely_top.png"></img>'
+                            char = '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_top.png"))
                     else: 
                         if pos < likely_max_pos:
-                            char =  '<img src="img/unlikely_move.png"></img>'
+                            char =  '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move.png"))
                         else:
-                            char =   '<img src="img/likely_move.png"></img>'
+                            char =   '<img src="{}"></img>'.format(os.path.abspath("./img/likely_move.png"))
         else:
             if pos > min_pos:
-                char = " "
+                char = ""
             else: 
                 if pos == min_pos:
                     if min_pos != likely_min_pos:
-                        char = '<img src="img/unlikely_bottom.png"></img>' 
+                        char = '<img src="{}"></img>' .format(os.path.abspath("./img/unlikely_bottom.png"))
                     else:
-                        char = '<img src="img/likely_bottom.png"></img>' 
+                        char = '<img src="{}"></img>' .format(os.path.abspath("./img/likely_bottom.png"))
                 else:
                     if pos > likely_min_pos:
-                        char = '<img src="img/unlikely_move_down.png"></img>'
+                        char = '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move_down.png"))
                     else:
-                        char = '<img src="img/likely_move_down.png"></img>'
-
-
-
-
-#            if pos <= likely_min_pos:
-#                char = '<img src="img/likely_move.png"></img>'
-#            else:
-#                if pos < min_pos:
-#                    char = '<img src="img/unlikely_move.png"></img>'
-#                else:
-#                    if pos == min_pos:
-#                        if min_pos != likely_min_pos:
-#                            char = '<img src="img/unlikely_bottom.png"></img>' 
-#                        else:
-#                            char = "o"
-#                    else:
-#                        char = " "
+                        char = '<img src="{}"></img>'.format(os.path.abspath("./img/likely_move_down.png"))
 
         graph[-1].append(char)
-    #print(graph[-1])
 
 df = pd.DataFrame({})
 
@@ -179,8 +163,19 @@ df[0] = current_table.Team
 for i in range(1,25):
     df[i] = (graph[i-1])
 
-display(df.style.set_table_styles([
-    {'selector':'td', 'props':'padding: 0px 10px 0px 0px;'},
-    {'selector':'th', 'props':'padding: 0px 10px;'}
-    ]))
+styled_table = df.style.set_table_styles([
+    {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
+    {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #f0f0f0;'},
+    {'selector':'tr', 'props':'line-height: 16px'},
+    {'selector':'td', 'props':' padding: 0px 5px 0px 0px;'},
+    {'selector':'th', 'props':' padding: 0px 5px;'}
+    ])
+
+#display(styled_table)
+print(styled_table.to_html)
+f=open("output_table.html", "w")
+f.write(styled_table.to_html())
+f.close
+
+imgkit.from_string(styled_table.to_html(), "out.jpg", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'681'})
 
