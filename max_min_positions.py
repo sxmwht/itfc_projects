@@ -7,14 +7,26 @@ import re
 import sys
 import imgkit
 import os
+import argparse
 
-# get the upcoming fixtures
-try:
-    if (sys.argv[1] == "-d"):
-        data = open("debug.html").read()
-except: 
-    fixtures_url = "https://www.bbc.co.uk/sport/football/league-one/scores-fixtures"
+# argument handling
+parser = argparse.ArgumentParser(description="Display what a league table could \
+        look like after the next round of fixtures")
 
+parser.add_argument('competition', metavar='competition', default='league-one', 
+        choices=["premier-league", "championship", "league-one", "league-two"],
+        nargs='?', help="The competition to analyse")
+
+parser.add_argument('-d', '--debug', action="store_true")
+
+args = parser.parse_args()
+
+# get upcoming fixtures
+fixtures_url = "https://www.bbc.co.uk/sport/football/{}/scores-fixtures".format(args.competition)
+
+if (args.debug):
+    data = open("debug_fixtures.html").read()
+else: 
     data = requests.get(fixtures_url).text
 
 soup = bs(data, "html.parser")
@@ -45,16 +57,25 @@ for f in upcoming_match_block.find_all(class_=is_fixture):
 teams_to_check = [team for match in fixtures for team in match]
 
 try:
+    teams_to_check[teams_to_check.index("Brighton & Hove Albion")] = "Brighton and Hove Albion"
+except:
+    pass
+try:
     teams_to_check[teams_to_check.index("Milton Keynes Dons")] = "MK Dons"
 except:
     pass
 
 # get the current table (thanks Gav)
-current_table = pd.read_html("https://www.twtd.co.uk/league-tables/", index_col=0, header=0)[1]
+if args.debug:
+    current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
+else:
+    current_table = pd.read_html("https://www.twtd.co.uk/league-tables/competition:{}/".format(args.competition), index_col=0, header=0)[1]
 current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
 
+num_teams = len(current_table.Team)+1
+
 # we know team #1 can't go higher
-for i in range(1,25):
+for i in range(1,num_teams):
     current_table.loc[i, "Max pos"]      = i
     current_table.loc[i, "GD Max pos"]   = i
     current_table.loc[i, "Max poss pos"] = i
@@ -66,7 +87,7 @@ for t in teams_to_check:
     gd            = current_table.loc[current_table.Team == t].GD.values[0]  + 3
 
     # absolute maximum position, no restrictions. Just 3 points added
-    absolute_max_pos   = 25-current_table.sort_values(["Pts", "GD"], ascending=True)["Pts"].searchsorted([pts_after_win] , side="right")
+    absolute_max_pos   = num_teams-current_table.sort_values(["Pts", "GD"], ascending=True)["Pts"].searchsorted([pts_after_win] , side="right")
     current_table.loc[current_table.Team == t, "Max pos"] = absolute_max_pos
 
     # find any positions that are only attainable with a GD swing >=4
@@ -96,7 +117,7 @@ for t in teams_to_check:
 # minimum position - rudimentary, might not be 100% accurate
 # we look at the number of teams below in the league that have a max_pos >= this team's current position
 # a team can potentially move down even if they're not playing, so we check all teams
-for i in range(1,25):
+for i in range(1,num_teams):
     current_table.loc[i, "Min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["Max pos"] <= i])
     current_table.loc[i, "GD min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["GD Max pos"] <= i])
 
@@ -112,7 +133,7 @@ graph = []
 # current position
 # impossible position
 
-for t in range(1,25): 
+for t in range(1,num_teams): 
     graph.append([])
     abs_max_pos    = current_table.loc[t, "Max pos"]
     max_poss_pos   = current_table.loc[t, "Max poss pos"]
@@ -120,7 +141,7 @@ for t in range(1,25):
     min_pos        = current_table.loc[t, "Min pos"]
     likely_min_pos = current_table.loc[t, "GD min pos"]
 
-    for pos in range(1,25):
+    for pos in range(1,num_teams):
         if pos == t: 
             char = '<img src="{}"></img>'.format(os.path.abspath("./img/current.png"))
         elif pos < t:
@@ -160,7 +181,7 @@ for t in range(1,25):
 df = pd.DataFrame({})
 
 df[0] = current_table.Team
-for i in range(1,25):
+for i in range(1,num_teams):
     df[i] = (graph[i-1])
 
 styled_table = df.style.set_table_styles([
