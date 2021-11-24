@@ -17,7 +17,7 @@ parser.add_argument('competition', metavar='competition', default='league-one',
         choices=["premier-league", "championship", "league-one", "league-two"],
         nargs='?', help="The competition to analyse")
 
-parser.add_argument('-d', '--debug', action="store_true")
+parser.add_argument('-d', '--debug', action="store_true", help="Use the downloaded fixtures/table")
 
 args = parser.parse_args()
 
@@ -43,9 +43,11 @@ def is_team(class_):
 upcoming_match_block = soup.find(class_=is_match_block)
 
 try:
-    print(upcoming_match_block.find("h3").string)
+    date = upcoming_match_block.find("h3").string
 except:
-    pass
+    date = "today"
+
+print("How the {} table could look after {}'s fixtures".format(re.sub("-", " ", args.competition), date))
 
 fixtures = []
 for f in upcoming_match_block.find_all(class_=is_fixture):
@@ -97,9 +99,8 @@ for t in teams_to_check:
 
     current_table.loc[current_table.Team == t, "GD Max pos"] = likely_max_pos
 
-    fixtures_copy = [f[:] for f in fixtures]
-
     # find any impossible positions
+    fixtures_copy = [f[:] for f in fixtures]
     mini_table = current_table[(current_table.Pts > pts) & (current_table.Pts <= pts_after_win)].Team
     teams_on_3 = current_table[(current_table.Pts == pts_after_win)].Team
     max_poss_pos = absolute_max_pos
@@ -125,8 +126,6 @@ for i in range(1,num_teams):
 # and we iterate through the elements and fill them in with a suitable
 # character
 
-#print(current_table.loc[1])
-
 graph = []
 
 # priority
@@ -146,13 +145,13 @@ for t in range(1,num_teams):
             char = '<img src="{}"></img>'.format(os.path.abspath("./img/current.png"))
         elif pos < t:
             if pos < abs_max_pos:
-                char = " "
+                char = ""
             else: 
                 if pos < max_poss_pos:
                     char = '<img src="{}"></img>'.format(os.path.abspath("./img/impossible.png"))
                 else: 
                     if pos == max_poss_pos:
-                        if max_poss_pos == likely_max_pos:
+                        if max_poss_pos >= likely_max_pos:
                             char = '<img src="{}"></img>'.format(os.path.abspath("./img/likely_top.png"))
                         else:
                             char = '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_top.png"))
@@ -184,6 +183,11 @@ df[0] = current_table.Team
 for i in range(1,num_teams):
     df[i] = (graph[i-1])
 
+# construct an array of opponents
+opponents = []
+#for t in current_table.Team:
+
+
 styled_table = df.style.set_table_styles([
     {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
     {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #f0f0f0;'},
@@ -192,6 +196,5 @@ styled_table = df.style.set_table_styles([
     {'selector':'th', 'props':' padding: 0px 5px;'}
     ])
 
-#display(styled_table)
 imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'681'})
 
