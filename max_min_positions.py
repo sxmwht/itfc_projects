@@ -8,6 +8,7 @@ import sys
 import imgkit
 import os
 import argparse
+import os
 
 # argument handling
 parser = argparse.ArgumentParser(description="Display what a league table could \
@@ -140,9 +141,14 @@ for t in range(1,num_teams):
     min_pos        = current_table.loc[t, "Min pos"]
     likely_min_pos = current_table.loc[t, "GD min pos"]
 
+    team_name      = current_table.loc[t, "Team"]
+
     for pos in range(1,num_teams):
         if pos == t: 
-            char = '<img src="{}"></img>'.format(os.path.abspath("./img/current.png"))
+            if os.path.exists("./img/logos/{}.png".format(re.sub(" ", "-", team_name).lower())):
+                char = '<img src="{}"></img>'.format(os.path.abspath("./img/logos/{}.png".format(re.sub(" ", "-", team_name).lower())))
+            else:
+                char = '<img src="{}"></img>'.format(os.path.abspath("./img/current.png"))
         elif pos < t:
             if pos < abs_max_pos:
                 char = ""
@@ -196,5 +202,5 @@ styled_table = df.style.set_table_styles([
     {'selector':'th', 'props':' padding: 0px 5px;'}
     ])
 
-imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'681'})
+imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-y':'20','crop-w':'681'})
 
