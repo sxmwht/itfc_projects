@@ -14,7 +14,7 @@ import os
 parser = argparse.ArgumentParser(description="Display what a league table could \
         look like after the next round of fixtures")
 
-parser.add_argument('competition', metavar='competition', default='league-one', 
+parser.add_argument('competition', metavar='competition', default='league-one',
         choices=["premier-league", "championship", "league-one", "league-two"],
         nargs='?', help="The competition to analyse")
 
@@ -27,7 +27,7 @@ fixtures_url = f"https://www.bbc.co.uk/sport/football/{args.competition}/scores-
 
 if (args.debug):
     data = open("debug_fixtures.html").read()
-else: 
+else:
     data = requests.get(fixtures_url).text
 
 soup = bs(data, "html.parser")
@@ -58,24 +58,33 @@ try:
         next_date = match_blocks[1].find("h3").string
         if "Wednesday" in next_date:
             collect_fixtures(match_blocks[1], fixtures)
-    elif "Saturday" in date: 
+    elif "Saturday" in date:
         next_date = match_blocks[1].find("h3").string
         if "Sunday" in next_date:
             collect_fixtures(match_blocks[1], fixtures)
 except:
     pass
 
-print(fixtures)
+# make names match between BBC sport and TWTD
+for f in fixtures:
+    for t in f:
+        if t == "Brighton & Hove Albion":
+            idx = f.index("Brighton & Hove Albion")
+            f[idx]= "Brighton and Hove Albion"
+        if t == "Milton Keynes Dons":
+            idx = f.index("Milton Keynes Dons")
+            f[idx]= "MK Dons"
+
 teams_to_check = [team for match in fixtures for team in match]
 
-try:
-    teams_to_check[teams_to_check.index("Brighton & Hove Albion")] = "Brighton and Hove Albion"
-except:
-    pass
-try:
-    teams_to_check[teams_to_check.index("Milton Keynes Dons")] = "MK Dons"
-except:
-    pass
+#try:
+#    teams_to_check[teams_to_check.index("Brighton & Hove Albion")] = "Brighton and Hove Albion"
+#except:
+#    pass
+#try:
+#    teams_to_check[teams_to_check.index("Milton Keynes Dons")] = "MK Dons"
+#except:
+#    pass
 
 # get the current table (thanks Gav)
 if args.debug:
@@ -114,7 +123,7 @@ for t in teams_to_check:
     mini_table = current_table[(current_table.Pts > pts) & (current_table.Pts <= pts_after_win)].Team
     teams_on_3 = current_table[(current_table.Pts == pts_after_win)].Team
     max_poss_pos = absolute_max_pos
-    for t3 in (teams_on_3): 
+    for t3 in (teams_on_3):
         for match in fixtures_copy:
             if t3 in match:
                 match.remove(t3)
@@ -142,7 +151,7 @@ graph = []
 # current position
 # impossible position
 
-for t in range(1,num_teams): 
+for t in range(1,num_teams):
     graph.append([])
     abs_max_pos    = current_table.loc[t, "Max pos"]
     max_poss_pos   = current_table.loc[t, "Max poss pos"]
@@ -153,7 +162,7 @@ for t in range(1,num_teams):
     team_name      = current_table.loc[t, "Team"]
 
     for pos in range(1,num_teams):
-        if pos == t: 
+        if pos == t:
             if os.path.exists("./img/logos/{}.png".format(re.sub(" ", "-", team_name).lower())):
                 char = '<img src="{}"></img>'.format(os.path.abspath("./img/logos/{}.png".format(re.sub(" ", "-", team_name).lower())))
             else:
@@ -161,16 +170,16 @@ for t in range(1,num_teams):
         elif pos < t:
             if pos < abs_max_pos:
                 char = ""
-            else: 
+            else:
                 if pos < max_poss_pos:
                     char = '<img src="{}"></img>'.format(os.path.abspath("./img/impossible.png"))
-                else: 
+                else:
                     if pos == max_poss_pos:
                         if max_poss_pos >= likely_max_pos:
                             char = '<img src="{}"></img>'.format(os.path.abspath("./img/likely_top.png"))
                         else:
                             char = '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_top.png"))
-                    else: 
+                    else:
                         if pos < likely_max_pos:
                             char =  '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move.png"))
                         else:
@@ -178,7 +187,7 @@ for t in range(1,num_teams):
         else:
             if pos > min_pos:
                 char = ""
-            else: 
+            else:
                 if pos == min_pos:
                     if min_pos != likely_min_pos:
                         char = '<img src="{}"></img>' .format(os.path.abspath("./img/unlikely_bottom.png"))
@@ -200,8 +209,19 @@ for i in range(1,num_teams):
 
 # construct an array of opponents
 opponents = []
-#for t in current_table.Team:
+for t in current_table.Team:
+    for f in fixtures:
+        if t in f:
+            if f[0] == t:
+                opp = f[1]
+            else:
+                opp = f[0]
+            opponents.append(f"<i>(vs. {opp})</i>")
+            break
+        else:
+            opp = ""
 
+df["Next Opps"] = opponents
 
 styled_table = df.style.set_table_styles([
     {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
@@ -211,5 +231,5 @@ styled_table = df.style.set_table_styles([
     {'selector':'th', 'props':' padding: 0px 5px;'}
     ])
 
-imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-y':'20','crop-w':'681'})
+imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'830'})#, 'crop-y':'20',
 
