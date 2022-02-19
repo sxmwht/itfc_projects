@@ -23,7 +23,7 @@ parser.add_argument('-d', '--debug', action="store_true", help="Use the download
 args = parser.parse_args()
 
 # get upcoming fixtures
-fixtures_url = "https://www.bbc.co.uk/sport/football/{}/scores-fixtures".format(args.competition)
+fixtures_url = f"https://www.bbc.co.uk/sport/football/{args.competition}/scores-fixtures/2022-02?filter=fixtures"
 
 if (args.debug):
     data = open("debug_fixtures.html").read()
@@ -41,22 +41,31 @@ def is_fixture(class_):
 def is_team(class_):
     return re.compile("qa-full-team-name").search(class_)
 
-upcoming_match_block = soup.find(class_=is_match_block)
+def collect_fixtures(match_block, fixtures):
+    for f in match_block.find_all(class_=is_fixture):
+        # only handle matches that aren't postponed
+        if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
+            match = [t.string for t in f.find_all(class_=is_team)]
+            fixtures.append(match)
+
+match_blocks = soup.find_all(class_=is_match_block)
+fixtures = []
+collect_fixtures(match_blocks[0], fixtures)
 
 try:
-    date = upcoming_match_block.find("h3").string
+    date = match_blocks[0].find("h3").string
+    if "Tuesday" in date:
+        next_date = match_blocks[1].find("h3").string
+        if "Wednesday" in next_date:
+            collect_fixtures(match_blocks[1], fixtures)
+    elif "Saturday" in date: 
+        next_date = match_blocks[1].find("h3").string
+        if "Sunday" in next_date:
+            collect_fixtures(match_blocks[1], fixtures)
 except:
-    date = "today"
+    pass
 
-print("How the {} table could look after {}'s fixtures".format(re.sub("-", " ", args.competition), date))
-
-fixtures = []
-for f in upcoming_match_block.find_all(class_=is_fixture):
-    # only handle matches that aren't postponed
-    if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
-        match = [t.string for t in f.find_all(class_=is_team)]
-        fixtures.append(match)
-
+print(fixtures)
 teams_to_check = [team for match in fixtures for team in match]
 
 try:
