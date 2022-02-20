@@ -210,25 +210,27 @@ for i in range(1,num_teams):
 # construct an array of opponents
 opponents = []
 for t in current_table.Team:
+    opp = ""
     for f in fixtures:
         if t in f:
             if f[0] == t:
                 opp = f[1]
             else:
                 opp = f[0]
-            opponents.append(f"<i>(vs. {opp})</i>")
             break
-        else:
-            opp = ""
+    if opp != "":
+        opponents.append(f"<i>(vs. {opp})</i>")
+    else:
+        opponents.append("")
 
-df["Next Opps"] = opponents
+df["Next Opponents"] = opponents
 
 styled_table = df.style.set_table_styles([
     {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
     {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #f0f0f0;'},
     {'selector':'tr', 'props':'line-height: 16px'},
-    {'selector':'td', 'props':' padding: 0px 5px 0px 0px;'},
-    {'selector':'th', 'props':' padding: 0px 5px;'}
+    {'selector':'td', 'props':'padding: 0px 5px 0px 0px;'},
+    {'selector':'th', 'props':'padding: 0px 5px;'},
     ])
 
 imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'830'})#, 'crop-y':'20',
