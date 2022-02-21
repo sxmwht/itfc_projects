@@ -223,6 +223,10 @@ for t in current_table.Team:
     else:
         opponents.append("")
 
+df_dict = dict.fromkeys(df.columns, '')
+print(df_dict)
+df.rename(columns = df_dict)
+
 df["Next Opponents"] = opponents
 
 styled_table = df.style.set_table_styles([
@@ -231,7 +235,12 @@ styled_table = df.style.set_table_styles([
     {'selector':'tr', 'props':'line-height: 16px'},
     {'selector':'td', 'props':'padding: 0px 5px 0px 0px;'},
     {'selector':'th', 'props':'padding: 0px 5px;'},
+    {'selector':'tr:hover', 'props':'height:100px;background-color: #ffff99'}
     ])
+
+
+with open("table.html", "w") as html:
+    print(styled_table.to_html(), file=html)
 
 imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'830'})#, 'crop-y':'20',
 
