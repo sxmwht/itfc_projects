@@ -36,21 +36,27 @@ def is_match_block(cls):
     return cls and cls == "qa-match-block"
 
 def is_fixture(class_):
-    return class_ == "sp-c-fixture__wrapper"
+    return class_ and class_ == "sp-c-fixture"
 
 def is_team(class_):
-    return re.compile("qa-full-team-name").search(class_)
+    return class_ and re.compile("qa-full-team-name").search(class_)
 
-def collect_fixtures(match_block, fixtures):
+def collect_fixtures(match_block, fixtures, postponed):
     for f in match_block.find_all(class_=is_fixture):
-        # only handle matches that aren't postponed
+        match_ = [t.string for t in f.find_all(class_=is_team)]
         if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
-            match = [t.string for t in f.find_all(class_=is_team)]
-            fixtures.append(match)
+            fixtures.append(match_)
+        else: 
+            print(f.find(class_="gel-brevier sp-c-fixture__status").text)
+            for t in match_:
+                postponed[t] = f.find(class_="gel-brevier sp-c-fixture__status").text
+
+
 
 match_blocks = soup.find_all(class_=is_match_block)
-fixtures = []
-collect_fixtures(match_blocks[0], fixtures)
+fixtures  = []
+postponed = {}
+collect_fixtures(match_blocks[0], fixtures, postponed)
 
 try:
     date = match_blocks[0].find("h3").string
@@ -75,7 +81,7 @@ for f in fixtures:
             idx = f.index("Milton Keynes Dons")
             f[idx]= "MK Dons"
 
-teams_to_check = [team for match in fixtures for team in match]
+teams_to_check = [team for match_ in fixtures for team in match_]
 
 #try:
 #    teams_to_check[teams_to_check.index("Brighton & Hove Albion")] = "Brighton and Hove Albion"
@@ -124,11 +130,11 @@ for t in teams_to_check:
     teams_on_3 = current_table[(current_table.Pts == pts_after_win)].Team
     max_poss_pos = absolute_max_pos
     for t3 in (teams_on_3):
-        for match in fixtures_copy:
-            if t3 in match:
-                match.remove(t3)
-                if match != []:
-                    if match[0] in mini_table.values:
+        for match_ in fixtures_copy:
+            if t3 in match_:
+                match_.remove(t3)
+                if match_ != []:
+                    if match_[0] in mini_table.values:
                         max_poss_pos += 1
 
     current_table.loc[current_table.Team == t, "Max poss pos"] = max_poss_pos
@@ -211,17 +217,21 @@ for i in range(1,num_teams):
 opponents = []
 for t in current_table.Team:
     opp = ""
-    for f in fixtures:
-        if t in f:
-            if f[0] == t:
-                opp = f[1]
-            else:
-                opp = f[0]
-            break
-    if opp != "":
-        opponents.append(f"<i>(vs. {opp})</i>")
+    if t in postponed.keys():
+        opp = postponed[t]
+        opponents.append(f"<i><font color = Gray>{opp}</font></i>")
     else:
-        opponents.append("")
+        for f in fixtures:
+            if t in f:
+                if f[0] == t:
+                    opp = f[1]
+                else:
+                    opp = f[0]
+                break
+        if opp != "":
+            opponents.append(f"<i><font color = Gray>vs. {opp}</font></i>")
+        else:
+            opponents.append("")
 
 df["Next Opponents"] = opponents
 
@@ -233,5 +243,5 @@ styled_table = df.style.set_table_styles([
     {'selector':'th', 'props':'padding: 0px 5px;'},
     ])
 
-imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'830'})#, 'crop-y':'20',
+imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'830', 'crop-y':'23'})
 
