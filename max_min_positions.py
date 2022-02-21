@@ -47,7 +47,6 @@ def collect_fixtures(match_block, fixtures, postponed):
         if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
             fixtures.append(match_)
         else: 
-            print(f.find(class_="gel-brevier sp-c-fixture__status").text)
             for t in match_:
                 postponed[t] = f.find(class_="gel-brevier sp-c-fixture__status").text
 
