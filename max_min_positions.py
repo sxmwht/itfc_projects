@@ -23,7 +23,7 @@ parser.add_argument('-d', '--debug', action="store_true", help="Use the download
 args = parser.parse_args()
 
 # get upcoming fixtures
-fixtures_url = f"https://www.bbc.co.uk/sport/football/{args.competition}/scores-fixtures/2022-02?filter=fixtures"
+fixtures_url = f"https://www.bbc.co.uk/sport/football/{args.competition}/scores-fixtures/"
 
 if (args.debug):
     data = open("debug_fixtures.html").read()
@@ -95,7 +95,7 @@ teams_to_check = [team for match_ in fixtures for team in match_]
 if args.debug:
     current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
 else:
-    current_table = pd.read_html("https://www.twtd.co.uk/league-tables/competition:{}/".format(args.competition), index_col=0, header=0)[1]
+    current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
 current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
 
 num_teams = len(current_table.Team)+1
