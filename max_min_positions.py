@@ -223,9 +223,9 @@ for t in current_table.Team:
         for f in fixtures:
             if t in f:
                 if f[0] == t:
-                    opp = f[1]
+                    opp = f"{f[1]} (h)"
                 else:
-                    opp = f[0]
+                    opp = f"{f[0]} (a)"
                 break
         if opp != "":
             opponents.append(f"<i><font color = Gray>vs. {opp}</font></i>")
