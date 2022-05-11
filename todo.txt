@@ -1,3 +1,6 @@
 Would be nice to have an interactive, HTML version (could go on a blog?)
 
 Need to actually check the algorithm to ensure that the table is correct!
+
+IMPORTANT: teams on the same number of points can swap due to a loss (GD
+changing). This isn't currently checked for
