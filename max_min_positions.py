@@ -139,12 +139,16 @@ for t in teams_to_check:
     current_table.loc[current_table.Team == t, "Max poss pos"] = max_poss_pos
 
 
-# minimum position - rudimentary, might not be 100% accurate
-# we look at the number of teams below in the league that have a max_pos >= this team's current position
+# minimum position 
+
+# first, we look at the number of teams below in the league that have a max_pos >= this team's current position
 # a team can potentially move down even if they're not playing, so we check all teams
 for i in range(1,num_teams):
     current_table.loc[i, "Min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["Max pos"] <= i])
     current_table.loc[i, "GD min pos"] = i + len(current_table.loc[i+1:][current_table.loc[i+1:]["GD Max pos"] <= i])
+    pts         = current_table.loc[current_table.Team == t].Pts.values[0]
+    mini_table  = current_table[(current_table.Pts <= pts) & (current_table.Pts >= pts-1)]
+
 
 # now we want to create a new dataframe. There will be a column for each team,
 # and we iterate through the elements and fill them in with a suitable
