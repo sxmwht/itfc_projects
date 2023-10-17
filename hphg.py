@@ -61,6 +61,12 @@ games_left = 46-games_played
 #   PPG over last 10 games
 ppg_last_ten = (points_total - points[-11]) / 10
 
+# divide ppg into two lists - one where it contains values >= the corresponding ppg req'd, and one for <
+xvals = np.linspace(1,games_played,10000)
+ppg_interp = np.interp(xvals, range(1,games_played+1), ppg[1:])
+ppgr_interp = np.interp(xvals, range(1,games_played+1), ppg_required[1:])
+ppg_gt_ppgr = [entry if entry >= ppgr_interp[index] else None for index,entry in enumerate(ppg_interp)]
+ppg_lt_ppgr = [entry if entry <= ppgr_interp[index] else None for index,entry in enumerate(ppg_interp)]
 
 
 ##### graphing
@@ -82,8 +88,10 @@ ax1.plot(goals, label="Goals", color="orange")
 ax2 = ax1.twinx()
 ax2.set_ylim((0,3.5*122/140))
 ax2.set_ylabel("PPG")
-ax2.plot([None]+ppg[1:], color="gray", label="PPG")
+ax2.plot(xvals,[None]+ppg_gt_ppgr[1:], color="green", label="PPG (above required)")
+ax2.plot(xvals,[None]+ppg_lt_ppgr[1:], color="red",   label="PPG (below required)")
 ax2.plot(ppg_required, "--", color="gray", label="Required PPG")
+#ax2.plot([None]+ppg[1:], "--", color="gray", label="Required PPG")
 
 # this is where we plot extra data that we've calculated
 #   points trajectory if we continue at current PPG
@@ -101,4 +109,4 @@ ax1.legend(h1[:2]+h2+h1[2:], l1[:2]+l2+l1[2:], loc=4, fontsize=6)
 ax1.grid(visible=True, which="both", axis="both")
 
 plt.savefig("hphg.png")
-#plt.show()
+plt.show()
