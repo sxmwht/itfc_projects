@@ -84,6 +84,11 @@ ax1.set_ylim((0,122))
 ax1.plot(points, color="blue", label="Points")
 ax1.plot(goals, label="Goals", color="orange")
 
+ax1.plot(games_played, points_total, ".", color="blue")
+ax1.plot(games_played, goals_total, ".", color="orange")
+ax1.text(games_played, points_total,     f" {points_total}", c="blue", ha="right", va="bottom")
+ax1.text(games_played, goals_total,      f" {goals_total}", c="orange", ha="left", va="top")
+
 # ax1is 2 contains the PPG, RHS of graph
 ax2 = ax1.twinx()
 ax2.set_ylim((0,3.5*122/140))
@@ -91,7 +96,11 @@ ax2.set_ylabel("PPG")
 ax2.plot(xvals,[None]+ppg_gt_ppgr[1:], color="green", label="PPG (above required)")
 ax2.plot(xvals,[None]+ppg_lt_ppgr[1:], color="red",   label="PPG (below required)")
 ax2.plot(ppg_required, "--", color="gray", label="Required PPG")
-#ax2.plot([None]+ppg[1:], "--", color="gray", label="Required PPG")
+
+ax2.plot(games_played, ppg_total, ".", color="green" if ppg_total >= ppg_required[-1] else "red")
+ax2.plot(games_played, ppg_required[-1], ".", color="gray")
+ax2.text(games_played, ppg_total,        f" {round(ppg_total,2)}", c="green" if ppg_total >= ppg_required[-1] else "red")
+ax2.text(games_played, ppg_required[-1], f" {round(ppg_required[-1],2)}", c="gray")
 
 # this is where we plot extra data that we've calculated
 #   points trajectory if we continue at current PPG
@@ -108,5 +117,8 @@ ax1.legend(h1[:2]+h2+h1[2:], l1[:2]+l2+l1[2:], loc=4, fontsize=6)
 
 ax1.grid(visible=True, which="both", axis="both")
 
+# plot the 0-100 line
+ax1.plot(range(47),np.linspace(0,100,47), "--", color="darkgray", linewidth=0.7)
+
 plt.savefig("hphg.png")
-plt.show()
+#plt.show()
