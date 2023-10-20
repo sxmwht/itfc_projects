@@ -105,10 +105,10 @@ ax2.text(games_played, ppg_required[-1], f" {round(ppg_required[-1],2)}", c="gra
 # this is where we plot extra data that we've calculated
 #   points trajectory if we continue at current PPG
 ax1.plot([games_played,46],[points_total, points_total+(games_left*ppg_total)], linewidth=1, linestyle="dotted", color="blue", label="Points trajectory if current PPG maintained")
-#   goals trajectory if we continue at current GPG
-ax1.plot([games_played,46],[goals_total, goals_total+(games_left*gpg)], linewidth=1, linestyle="dotted", color="orange", label="Goals trajectory if current GPG maintained")
 #   points trajectory if we continue at PPG of last 10
 ax1.plot([games_played,46],[points_total, points_total+(games_left*ppg_last_ten)], linewidth=1, linestyle="dashed", color="blue", label="Points trajectory if PPG of last 10 maintained")
+#   goals trajectory if we continue at current GPG
+ax1.plot([games_played,46],[goals_total, goals_total+(games_left*gpg)], linewidth=1, linestyle="dotted", color="orange", label="Goals trajectory if current GPG maintained")
 
 
 h1, l1 = ax1.get_legend_handles_labels()
