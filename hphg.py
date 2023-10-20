@@ -122,3 +122,15 @@ ax1.plot(range(47),np.linspace(0,100,47), "--", color="darkgray", linewidth=0.7)
 
 plt.savefig("hphg.png")
 #plt.show()
+
+
+# upload the image to Thumbsnap and get a URL
+url="https://thumbsnap.com/api/upload"
+files={
+        'key'   : (None, "00044bbe9b8f032c5214bd699910d433"),
+        'media' : open("hphg.png", "rb")
+}
+
+r=requests.post(url=url, files=files)
+img_url=r.json()['data']['media']
+print(img_url)
