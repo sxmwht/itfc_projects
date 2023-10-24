@@ -1,12 +1,28 @@
-For each team, look at the teams within 3 points either way
+The current implementation almost works, although it would be much tidier with an OO approach, which is what I was going to aim for before
 
-3 points above - 
-  - Check the GD between the team(s) +3pts. This gives an initial estimate
-  - If none of the teams in the +3pt range are playing against each other, then
-    the initial estimate is correct?
-  - If some of the teams in the +3pt range are playing each other and one of them is +2pts, then check the GD against those teams. This may affect the MAXIMUM place
+If we have a "team" class, we can contain the following stats easily:
 
-3 points below -
-  
+- name
+- position
+- points
+- GD
+- GF (could and should be used to separate teams on the same GD, another layer to check)
+- playing in upcoming fixture or not
+- upcoming opponent, if applicable
+- teams in the "mini league" (3 points above) for working out impossible positions
+- teams that could finish above them
+- teams that they could jump above? 
+
+then we can add to that
+- maximum possible position
+- likely highest possible position
+- lowest possible position
+- lowest likely possible position
+- impossible positions
+
+By using an OO approach, we can loop over objects and check if the team we're working on is in other teams' lists, meaning we don't have to do calculations over and over. This may or may not be true
 
 
+================
+
+The fundamental flaw with the current implementation is it is missing the possibility that a team moves UP the league without playing - if they are level on GD with a team that is playing, who could lose. We therefore need to check all teams when working out how high they can move, not just those playing, but the calculations will be different - the "mini league" will only contain those teams on the same points total as the them.
