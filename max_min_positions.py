@@ -17,6 +17,7 @@ class Team:
         self.points = entry.Pts
         self.gd = entry.GD
         self.is_playing = False
+        self.opponent = None
 
 def find_max_position(team, teams):
     team.max_pos = team.pos
@@ -32,7 +33,13 @@ def find_min_position(team, teams):
     team.teams_chasing = [t for t in teams[team.pos:] if t.points >= team.points - 3]
     team.min_pos += len([t for t in team.teams_chasing if t.max_pos <= team.pos])
 
-
+#def get_opponent(team, teams, fixtures):
+#    for fxt in fixtures:
+#        if fxt[0] == team.name:
+#            team.opponent = 
+#        if team in fxt:
+#            team.opponent = fxt[1-
+#
 
 
 # argument handling
@@ -95,6 +102,8 @@ try:
 except:
     pass
 
+print(fixtures)
+
 # make names match between BBC sport and TWTD
 for f in fixtures:
     for t in f:
@@ -105,7 +114,8 @@ for f in fixtures:
             idx = f.index("Milton Keynes Dons")
             f[idx]= "MK Dons"
 
-teams_to_check = [team for match_ in fixtures for team in match_]
+print(fixtures)
+
 
 # get the current table (thanks Gav)
 if args.debug:
@@ -118,11 +128,18 @@ num_teams = len(current_table.Team)+1
 
 teams = []
 
+teams_to_check = [team for match_ in fixtures for team in match_]
+
 for i in range(1,num_teams):
     teams.append(Team(i, current_table.loc[i]))
 
+# replace the names in "fixtures" with their team object
+for f in fixtures:
+    for i in [0,1]:
+        f[i] = [team for team in teams if team.name == f[i]][0]
+
 for t in teams:
-    t.is_playing = True if t.name in teams_to_check else False
+    t.is_playing = True if t in teams_to_check else False
     find_max_position(t, teams)
 
 for t in teams:
