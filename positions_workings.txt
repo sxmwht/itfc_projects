@@ -83,3 +83,7 @@ G
 because a GD swing of more than 3 is not NECESSARILY required.
 
 The overall outcome of this thinking is that we cannot afford to think only of positions at the start and we need to think of teams, and work the positions out afterwards. Last time I attempted to solve this problem, I convinced myself that this wasn't the case, but I'm leaving this note here as my explanation as to why I was wrong.
+
+================
+
+helping fixture = at least one of the teams is more than 1 point behind

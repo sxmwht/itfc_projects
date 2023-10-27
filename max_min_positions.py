@@ -19,13 +19,13 @@ class Team:
         self.is_playing = False
         self.opponent = None
 
-def get_teams_in_reach(team, teams):
+def get_teams_in_reach(team):
     if team.is_playing:
         team.teams_reachable = [t for t in teams[:team.pos-1] if t.points <= team.points + 3]
     else:
         team.teams_reachable = [t for t in teams[:team.pos-1] if t.points == team.points]
 
-def get_teams_easily_in_reach(team, teams):
+def get_teams_easily_in_reach(team):
     if team.is_playing:
         team.teams_easily_reachable = [t for t in team.teams_reachable if t.points == team.points + 3 if t.gd < team.gd + 4]
     else:
@@ -65,7 +65,6 @@ def get_opponent(team, teams, fixtures):
             elif fxt[1] == team:
                 team.opponent = fxt[0]
             break
-
 
 # argument handling
 parser = argparse.ArgumentParser(description="Display what a league table could \
@@ -164,8 +163,8 @@ for t in teams:
 
 for t in teams:
     t.is_playing = True if t in teams_to_check else False
-    get_teams_in_reach(t, teams)
-    get_teams_easily_in_reach(t, teams)
+    get_teams_in_reach(t)
+    get_teams_easily_in_reach(t)
     find_limiting_fixtures(t, fixtures)
 
 #for t in teams:
@@ -174,6 +173,6 @@ for t in teams:
 #for t in teams:
 #    find_min_position(t, teams)
 #
-for t in teams:
-    print(t.name, t.opponent.name if t.opponent is not None else None, " v ".join([team.name for f in t.limiting_fixtures for team in f]))
+#for t in teams:
+#    print(t.name, t.opponent.name if t.opponent is not None else None, " v ".join([team.name for f in t.limiting_fixtures for team in f]), [o.name for o in t.teams_reachable])
 
