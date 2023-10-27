@@ -19,6 +19,18 @@ class Team:
         self.is_playing = False
         self.opponent = None
 
+def get_teams_in_reach(team, teams):
+    if team.is_playing:
+        team.teams_reachable = [t for t in teams[:team.pos-1] if t.points <= team.points + 3]
+    else:
+        team.teams_reachable = [t for t in teams[:team.pos-1] if t.points == team.points]
+
+def get_teams_easily_in_reach(team, teams):
+    if team.is_playing:
+        team.teams_easily_reachable = [t for t in team.teams_reachable if t.points == team.points + 3 if t.gd < team.gd + 4]
+    else:
+        team.teams_easily_reachable = [t for t in team.teams_reachable if t.gd < team.gd + 4]
+
 def find_max_position(team, teams):
     team.max_pos = team.pos
     if team.is_playing:
@@ -33,13 +45,26 @@ def find_min_position(team, teams):
     team.teams_chasing = [t for t in teams[team.pos:] if t.points >= team.points - 3]
     team.min_pos += len([t for t in team.teams_chasing if t.max_pos <= team.pos])
 
-#def get_opponent(team, teams, fixtures):
-#    for fxt in fixtures:
-#        if fxt[0] == team.name:
-#            team.opponent = 
-#        if team in fxt:
-#            team.opponent = fxt[1-
-#
+def find_limiting_fixtures(team, fixtures):
+    # a fixture is defined as a team's "limiting fixture" if its result is
+    # guaranteed to put a position out of the team's reach. This will occur if
+    # BOTH the contestants are 1-3 points ahead of the team AND at least one of
+    # the contestants are 3 points ahead of the team
+    team.limiting_fixtures = []
+    teams_3_ahead      = [t for t in team.teams_reachable if t.points == team.points+3]
+    teams_1_to_3_ahead = [t for t in team.teams_reachable if t.points != team.points]
+    for f in fixtures:
+        if any([True if t in teams_3_ahead else False for t in f]) and all([True if t in teams_1_to_3_ahead else False for t in f]):
+            team.limiting_fixtures.append(f)
+
+def get_opponent(team, teams, fixtures):
+    for fxt in fixtures:
+        if team in fxt:
+            if fxt[0] == team:
+                team.opponent = fxt[1]
+            elif fxt[1] == team:
+                team.opponent = fxt[0]
+            break
 
 
 # argument handling
@@ -102,8 +127,6 @@ try:
 except:
     pass
 
-print(fixtures)
-
 # make names match between BBC sport and TWTD
 for f in fixtures:
     for t in f:
@@ -113,9 +136,6 @@ for f in fixtures:
         if t == "Milton Keynes Dons":
             idx = f.index("Milton Keynes Dons")
             f[idx]= "MK Dons"
-
-print(fixtures)
-
 
 # get the current table (thanks Gav)
 if args.debug:
@@ -128,7 +148,6 @@ num_teams = len(current_table.Team)+1
 
 teams = []
 
-teams_to_check = [team for match_ in fixtures for team in match_]
 
 for i in range(1,num_teams):
     teams.append(Team(i, current_table.loc[i]))
@@ -138,13 +157,23 @@ for f in fixtures:
     for i in [0,1]:
         f[i] = [team for team in teams if team.name == f[i]][0]
 
+teams_to_check = [team for match_ in fixtures for team in match_]
+
+for t in teams:
+    get_opponent(t, teams, fixtures)
+
 for t in teams:
     t.is_playing = True if t in teams_to_check else False
-    find_max_position(t, teams)
+    get_teams_in_reach(t, teams)
+    get_teams_easily_in_reach(t, teams)
+    find_limiting_fixtures(t, fixtures)
 
+#for t in teams:
+#    find_possible_positions(t, teams)
+#
+#for t in teams:
+#    find_min_position(t, teams)
+#
 for t in teams:
-    find_min_position(t, teams)
-
-for t in teams:
-    print(t.name, t.is_playing, t.max_pos, t.min_pos)
+    print(t.name, t.opponent.name if t.opponent is not None else None, " v ".join([team.name for f in t.limiting_fixtures for team in f]))
 
