@@ -27,23 +27,9 @@ def get_teams_in_reach(team):
 
 def get_teams_easily_in_reach(team):
     if team.is_playing:
-        team.teams_easily_reachable = [t for t in team.teams_reachable if t.points == team.points + 3 if t.gd < team.gd + 4]
+        team.teams_easily_reachable = [t for t in team.teams_reachable if (t.points < team.points + 3 or (t.points == team.points + 3 and t.gd < team.gd + 4))]
     else:
         team.teams_easily_reachable = [t for t in team.teams_reachable if t.gd < team.gd + 4]
-
-def find_max_position(team, teams):
-    team.max_pos = team.pos
-    if team.is_playing:
-        team.teams_reachable = [t for t in teams[:team.pos-1] if t.points <= team.points + 3]
-        team.max_pos -= len(team.teams_reachable)
-    else:
-        team.teams_reachable = [t for t in teams[:team.pos-1] if t.points == team.points]
-        team.max_pos -= len([t for t in team.teams_reachable if t.is_playing])
-
-def find_min_position(team, teams):
-    team.min_pos = team.pos
-    team.teams_chasing = [t for t in teams[team.pos:] if t.points >= team.points - 3]
-    team.min_pos += len([t for t in team.teams_chasing if t.max_pos <= team.pos])
 
 def find_limiting_fixtures(team, fixtures):
     # a fixture is defined as a team's "limiting fixture" if its result is
@@ -56,6 +42,47 @@ def find_limiting_fixtures(team, fixtures):
     for f in fixtures:
         if any([True if t in teams_3_ahead else False for t in f]) and all([True if t in teams_1_to_3_ahead else False for t in f]):
             team.limiting_fixtures.append(f)
+
+def get_teams_behind(team):
+    team.teams_behind = [t for t in teams[team.pos:] if t.points >= team.points - 3]
+
+def get_teams_chasing(team):
+    team.teams_chasing = [t for t in team.teams_behind if t.points == team.points - 3 if t.gd > team.gd - 4]
+
+def find_helping_fixtures(team, fixtures):
+    # a fixture is defined as a team's "helping fixture" if its result is
+    # guaranteed to ensure a position that the team can't fall to. This will
+    # occur if BOTH the contestants are >= 1 points behind the team AND at least 
+    # one of the contestants are > 1 points behind the team
+    team.helping_fixtures = []
+    teams_1_to_3_behind = [t for t in team.teams_behind if t.points <= team.points-1]
+    teams_2_to_3_behind = [t for t in team.teams_behind if t.points <  team.points-1]
+    for f in fixtures:
+        if any([True if t in teams_2_to_3_behind else False for t in f]) and all([True if t in teams_1_to_3_behind else False for t in f]):
+            team.helping_fixtures.append(f)
+
+def calculate_possible_positions(team):
+    # moving upwards
+    num_reachable = len(team.teams_reachable) 
+    print(team.pos)
+    num_easily_reachable = len(team.teams_easily_reachable)
+    print(num_reachable, num_easily_reachable)
+    num_impossible = 0
+    for f in team.limiting_fixtures:
+        print([t.name for t in f])
+        num_impossible += 1
+        num_reachable -= 1
+        print(f[0] in team.teams_reachable and f[0] not in team.teams_easily_reachable)
+        print(f[1] in team.teams_reachable and f[1] not in team.teams_easily_reachable)
+        if not any([t in team.teams_reachable and t not in team.teams_easily_reachable for t in f]):
+            print("adshfa;")
+            num_easily_reachable -= 1
+    print(num_reachable, num_easily_reachable)
+    team.positions = ["x" if pos == team.pos-1 else 
+                      ('e' if pos >= team.pos-1-num_easily_reachable else 
+                       ('r' if pos >= team.pos-1-num_reachable else 
+                        ('i' if pos >= team.pos-1-num_reachable-num_impossible else None))) for pos in range (0,team.pos)]
+    
 
 def get_opponent(team, teams, fixtures):
     for fxt in fixtures:
@@ -79,7 +106,7 @@ parser.add_argument('-d', '--debug', action="store_true", help="Use the download
 args = parser.parse_args()
 
 # get upcoming fixtures
-fixtures_url = f"https://www.bbc.co.uk/sport/football/{args.competition}/scores-fixtures/"
+fixtures_url = f"https://www.bbc.co.uk/sport/football/{args.competition}/scores-fixtures/2023-11"
 
 if (args.debug):
     data = open("debug_fixtures.html").read()
@@ -136,9 +163,12 @@ for f in fixtures:
             idx = f.index("Milton Keynes Dons")
             f[idx]= "MK Dons"
 
+fixtures[5][1], fixtures[8][1] = fixtures[8][1], fixtures[5][1]
+
 # get the current table (thanks Gav)
 if args.debug:
-    current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
+    current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
+    #current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
 else:
     current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
 current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
@@ -167,12 +197,19 @@ for t in teams:
     get_teams_easily_in_reach(t)
     find_limiting_fixtures(t, fixtures)
 
-#for t in teams:
-#    find_possible_positions(t, teams)
-#
-#for t in teams:
-#    find_min_position(t, teams)
-#
-#for t in teams:
-#    print(t.name, t.opponent.name if t.opponent is not None else None, " v ".join([team.name for f in t.limiting_fixtures for team in f]), [o.name for o in t.teams_reachable])
+# prints the fixtures
+for f in fixtures:
+    print([t.name for t in f])
+
+for t in teams:
+    get_teams_behind(t)
+    get_teams_chasing(t)
+    find_helping_fixtures(t, fixtures)
+
+for t in teams:
+    calculate_possible_positions(t)
+
+for t in teams:
+    #print(t.name, t.opponent.name if t.opponent is not None else None, " v ".join([team.name for f in t.limiting_fixtures for team in f]))
+    print(t.name, t.positions)
 
