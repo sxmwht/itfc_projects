@@ -22,7 +22,63 @@ then we can add to that
 
 By using an OO approach, we can loop over objects and check if the team we're working on is in other teams' lists, meaning we don't have to do calculations over and over. This may or may not be true
 
+================
+
+Maximum position = points + 3, place them at the top of that
+Maximum likely position = points + 3, but only place them above teams that have GD < team.GD + 4
+Impossible positions = one less than max pos for each fixture consisting purely of teams 1-3 points ahead
+
+Min position = one lower than current position for each team that could go above, even if it is an "impossible" position
+Min likely position = the same, but it's those places that are more than 3 GD worse off
 
 ================
 
-The fundamental flaw with the current implementation is it is missing the possibility that a team moves UP the league without playing - if they are level on GD with a team that is playing, who could lose. We therefore need to check all teams when working out how high they can move, not just those playing, but the calculations will be different - the "mini league" will only contain those teams on the same points total as the them.
+I've had a thought - it's not enough to work out max position, max poss position, and then strike them off as and when we deem them impossible. Depending on WHICH teams make something impossible will change things. For example
+
+Team  GD Points
+TeamA 6  10
+TeamB 0  10
+TeamC 0  8
+TeamD 0  8
+TeamE 1  7
+
+TeamB are playing TeamD
+
+Before, we would have said that the graph for TeamE should look like
+Y
+G
+G
+G
+
+Then we would have said that there is one position impossible, leaving
+X
+G
+G
+G
+
+But because it's TeamB playing TeamD, one of THEM is going to be excluded (lets say TeamB) and therefore the only teams reachable are
+TeamA
+TeamC
+TeamD
+
+We know from before that TeamA are only reachable on GD and therefore the list SHOULD look like
+X
+Y
+G
+G
+
+ie the Y is still in play and shouldn't be chalked off.
+
+If TeamA were one of the teams in what we're now calling a "limiting fixture", then there is a possibility that they are the team that remains out of reach, and therefore a possibility that the Y is the one we drop on the list. Remembering what the problem we're trying to solve is, we therefore would leave the list as 
+X
+G
+G
+G
+
+because a GD swing of more than 3 is not NECESSARILY required.
+
+The overall outcome of this thinking is that we cannot afford to think only of positions at the start and we need to think of teams, and work the positions out afterwards. Last time I attempted to solve this problem, I convinced myself that this wasn't the case, but I'm leaving this note here as my explanation as to why I was wrong.
+
+================
+
+helping fixture = at least one of the teams is more than 1 point behind
