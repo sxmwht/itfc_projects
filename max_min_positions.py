@@ -10,6 +10,33 @@ import os
 import argparse
 import os
 
+pd.set_option('display.max_columns', 1000)
+pd.set_option('display.width', None)
+def choose_image(char):
+    if char == 'x':
+        return '<img src="{}"></img>'.format(os.path.abspath(f"./img/logos/{re.sub(' ', '-', team.name).lower()}.png"))
+    if char == 'i':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/impossible.png"))
+    if char == 'e':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/likely_move.png"))
+    if char == 'r':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move.png"))
+    if char == 'b':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move_down.png"))
+    if char == 'c':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/likely_move_down.png"))
+    if char == 'ut':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_top.png"))
+    if char == 'lt':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/likely_top.png"))
+    if char == 'ld':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/likely_bottom.png"))
+    if char == 'ud':
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_bottom.png"))
+    if char == None:
+        return ''
+
+
 class Team:
     def __init__(self, pos, entry):
         self.pos = pos
@@ -72,9 +99,11 @@ def calculate_possible_positions(team):
         if not any([t in team.teams_reachable and t not in team.teams_easily_reachable for t in f]):
             num_easily_reachable -= 1
     team.positions  = ["x" if pos == team.pos-1 else
-                       ('e' if pos >= team.pos-1-num_easily_reachable else
-                        ('r' if pos >= team.pos-1-num_reachable else
-                         ('i' if pos >= team.pos-1-num_reachable-num_impossible else None))) for pos in range (0,team.pos)]
+                       ('lt' if pos == team.pos-1-num_easily_reachable and pos == team.pos-1-num_reachable else
+                        ('ut' if pos != team.pos-1-num_easily_reachable and pos == team.pos-1-num_reachable else
+                         ('e' if pos >= team.pos-1-num_easily_reachable else
+                          ('r' if pos >= team.pos-1-num_reachable else
+                           ('i' if pos >= team.pos-1-num_reachable-num_impossible else None))))) for pos in range (0,team.pos)]
 
     # moving downwards
     num_behind  = len(team.teams_behind)
@@ -85,17 +114,21 @@ def calculate_possible_positions(team):
         num_behind -= 1
         if not any([t in team.teams_behind and t not in team.teams_chasing for t in f]):
             num_chasing -= 1
-    team.positions += [('c' if pos <= team.pos-1+num_chasing else
-                        ('b' if pos <= team.pos-1+num_behind else
-                         ('i' if pos <= team.pos-1+num_behind+num_impossible else None))) for pos in range (team.pos,24)]
+    team.positions += ['ld' if pos == team.pos-1+num_chasing and pos == team.pos-1+num_behind else
+                        ('ud' if pos != team.pos-1+num_chasing and pos == team.pos-1+num_behind else
+                         ('c' if pos <= team.pos-1+num_chasing else
+                          ('b' if pos <= team.pos-1+num_behind else
+                           ('i' if pos <= team.pos-1+num_behind+num_impossible else None)))) for pos in range (team.pos,24)]
 
 def get_opponent(team, teams, fixtures):
     for fxt in fixtures:
         if team in fxt:
             if fxt[0] == team:
                 team.opponent = fxt[1]
+                team.is_at_home = True
             elif fxt[1] == team:
                 team.opponent = fxt[0]
+                team.is_at_home = False
             break
 
 # argument handling
@@ -216,4 +249,24 @@ for t in teams:
 
 for t in teams:
     print(t.name, t.positions)
+
+df = pd.DataFrame({})
+
+df[0] = current_table.Team
+for i, team in enumerate(teams):
+    df[i+1] = list(map(choose_image, team.positions))
+
+# construct an array of opponents
+df[len(df[0])+1] = [f"<i><font color = Gray> vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</font></i>" if team.opponent is not None else "" for team in teams]
+
+
+styled_table = df.style.set_table_styles([
+    {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
+    {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #f0f0f0;'},
+    {'selector':'tr', 'props':'line-height: 16px'},
+    {'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
+    {'selector':'th', 'props':'padding: 0px 5px;'},
+    ])
+
+imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'860', 'crop-y':'23'})
 
