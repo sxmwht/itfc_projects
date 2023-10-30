@@ -81,4 +81,12 @@ The overall outcome of this thinking is that we cannot afford to think only of p
 
 ================
 
-helping fixture = at least one of the teams is more than 1 point behind
+helping fixture = at least one of the teams is more than 1 point behind and both teams are at least 1 point behind
+
+================
+
+could it be possible to work out the teams chasing and behind by iterating through the teams below and seeing what teams they could reach?
+
+================
+
+We could also use these basic team objects, put them in a library and open up the ability to check other stats

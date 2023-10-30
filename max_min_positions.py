@@ -31,9 +31,7 @@ def choose_image(char):
         return '<img src="{}"></img>'.format(os.path.abspath("./img/likely_bottom.png"))
     if char == 'ud':
         return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_bottom.png"))
-    if char == None:
-        return ''
-
+    return ''
 
 class Team:
     def __init__(self, pos, entry):
@@ -44,16 +42,12 @@ class Team:
         self.is_playing = False
         self.opponent = None
 
-def get_teams_in_reach(team):
+def get_teams_within_3_above(team):
     if team.is_playing:
         team.teams_reachable = [t for t in teams[:team.pos-1] if t.points <= team.points + 3]
-    else:
-        team.teams_reachable = [t for t in teams[:team.pos-1] if t.points == team.points if t.is_playing]
-
-def get_teams_easily_in_reach(team):
-    if team.is_playing:
         team.teams_easily_reachable = [t for t in team.teams_reachable if (t.points < team.points + 3 or (t.points == team.points + 3 and t.gd < team.gd + 4))]
     else:
+        team.teams_reachable = [t for t in teams[:team.pos-1] if t.points == team.points if t.is_playing]
         team.teams_easily_reachable = [t for t in team.teams_reachable if t.gd < team.gd + 4 if t.is_playing]
 
 def find_limiting_fixtures(team, fixtures):
@@ -68,10 +62,8 @@ def find_limiting_fixtures(team, fixtures):
         if any([True if t in teams_3_ahead else False for t in f]) and all([True if t in teams_1_to_3_ahead else False for t in f]):
             team.limiting_fixtures.append(f)
 
-def get_teams_behind(team):
+def get_teams_within_3_below(team):
     team.teams_behind = [t for t in teams[team.pos:] if t.points >= team.points - 3 if t.is_playing]
-
-def get_teams_chasing(team):
     team.teams_chasing = [t for t in team.teams_behind if (t.points > team.points - 3 or (t.points == team.points - 3 and t.gd > team.gd - 4))]
 
 def find_helping_fixtures(team, fixtures):
@@ -122,9 +114,11 @@ def get_opponent(team, teams, fixtures):
     for fxt in fixtures:
         if team in fxt:
             if fxt[0] == team:
+                team.is_playing = True
                 team.opponent = fxt[1]
                 team.is_at_home = True
             elif fxt[1] == team:
+                team.is_playing = True
                 team.opponent = fxt[0]
                 team.is_at_home = False
             break
@@ -168,8 +162,6 @@ def collect_fixtures(match_block, fixtures, postponed):
         else:
             for t in match_:
                 postponed[t] = f.find(class_="gel-brevier sp-c-fixture__status").text
-
-
 
 match_blocks = soup.find_all(class_=is_match_block)
 fixtures  = []
@@ -219,30 +211,20 @@ for f in fixtures:
     for i in [0,1]:
         f[i] = [team for team in teams if team.name == f[i]][0]
 
-teams_to_check = [team for match_ in fixtures for team in match_]
-
 for t in teams:
+    t.is_playing = False # will be set by get_opponent if they are playing
     get_opponent(t, teams, fixtures)
 
 for t in teams:
-    t.is_playing = True if t in teams_to_check else False
-
-for t in teams:
-    get_teams_in_reach(t)
-    get_teams_easily_in_reach(t)
+    get_teams_within_3_above(t)
+    get_teams_within_3_below(t)
     find_limiting_fixtures(t, fixtures)
+    find_helping_fixtures(t, fixtures)
+    calculate_possible_positions(t)
 
 # prints the fixtures
 for f in fixtures:
     print([t.name for t in f])
-
-for t in teams:
-    get_teams_behind(t)
-    get_teams_chasing(t)
-    find_helping_fixtures(t, fixtures)
-
-for t in teams:
-    calculate_possible_positions(t)
 
 for t in teams:
     print(t.name, t.positions)
