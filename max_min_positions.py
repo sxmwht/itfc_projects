@@ -8,7 +8,6 @@ import sys
 import imgkit
 import os
 import argparse
-import os
 
 def choose_image(char):
     if char == 'x':
@@ -37,6 +36,17 @@ class Team:
     def __init__(self, pos, entry):
         self.pos = pos
         self.name = entry.Team
+        self.shortened_name = entry.Team.split()[0]
+        if self.name == "Preston North End":
+            self.shortened_name = self.name
+        elif self.name == "Sheffield Wednesday":
+            self.shortened_name = "Sheff Wed"
+        elif self.name == "Bristol City":
+            self.shortened_name = "Bristol City"
+        elif self.name == "Queens Park Rangers":
+            self.shortened_name = "QPR"
+        elif self.name == "West Bromwich Albion":
+            self.shortened_name = "West Brom"
         self.points = entry.Pts
         self.gd = entry.GD
         self.is_playing = False
@@ -136,7 +146,7 @@ parser.add_argument('-d', '--debug', action="store_true", help="Use the download
 args = parser.parse_args()
 
 # get upcoming fixtures
-fixtures_url = f"https://www.bbc.co.uk/sport/football/{args.competition}/scores-fixtures/2023-11"
+fixtures_url = "https://www.theguardian.com/football/championship/fixtures"
 
 if (args.debug):
     data = open("debug_fixtures.html").read()
@@ -146,40 +156,46 @@ else:
 soup = bs(data, "html.parser")
 
 def is_match_block(cls):
-    return cls and cls == "qa-match-block"
+    return cls and cls == "football-matches__day"
 
 def is_fixture(class_):
-    return class_ and class_ == "sp-c-fixture"
+    return class_ and class_ == "football-match football-match--fixture"
 
 def is_team(class_):
-    return class_ and re.compile("qa-full-team-name").search(class_)
+    return class_ and re.compile("team-name__long").search(class_)
 
-def collect_fixtures(match_block, fixtures, postponed):
+def collect_fixtures(match_block, fixtures):
     for f in match_block.find_all(class_=is_fixture):
         match_ = [t.string for t in f.find_all(class_=is_team)]
-        if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
-            fixtures.append(match_)
-        else:
-            for t in match_:
-                postponed[t] = f.find(class_="gel-brevier sp-c-fixture__status").text
+        #if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
+        fixtures.append(match_)
+        #else:
+        #    for t in match_:
+        #        postponed[t] = f.find(class_="gel-brevier sp-c-fixture__status").text
 
 match_blocks = soup.find_all(class_=is_match_block)
 fixtures  = []
 postponed = {}
-collect_fixtures(match_blocks[0], fixtures, postponed)
+collect_fixtures(match_blocks[0], fixtures)
 
-try:
-    date = match_blocks[0].find("h3").string
-    if "Tuesday" in date:
-        next_date = match_blocks[1].find("h3").string
-        if "Wednesday" in next_date:
-            collect_fixtures(match_blocks[1], fixtures)
-    elif "Saturday" in date:
-        next_date = match_blocks[1].find("h3").string
+date = match_blocks[0].find(class_="date-divider").string
+if "Tuesday" in date:
+    next_date = match_blocks[1].find(class_="date-divider").string
+    if "Wednesday" in next_date:
+        collect_fixtures(match_blocks[1], fixtures)
+elif "Saturday" in date:
+    next_date = match_blocks[1].find(class_="date-divider").string
+    if "Sunday" in next_date:
+        collect_fixtures(match_blocks[1], fixtures)
+elif "Friday" in date:
+    next_date = match_blocks[1].find(class_="date-divider").string
+    if "Saturday" in next_date:
+        collect_fixtures(match_blocks[1], fixtures)
+        next_date = match_blocks[2].find(class_="date-divider").string
         if "Sunday" in next_date:
-            collect_fixtures(match_blocks[1], fixtures)
-except:
-    pass
+            collect_fixtures(match_blocks[2], fixtures)
+
+print(fixtures)
 
 # make names match between BBC sport and TWTD
 for f in fixtures:
@@ -208,8 +224,9 @@ for i in range(1,num_teams):
 
 # replace the names in "fixtures" with their team object
 for f in fixtures:
+    print(f)
     for i in [0,1]:
-        f[i] = [team for team in teams if team.name == f[i]][0]
+        f[i] = [team for team in teams if team.shortened_name == f[i]][0]
 
 for t in teams:
     t.is_playing = False # will be set by get_opponent if they are playing
@@ -240,11 +257,11 @@ df[len(df[0])+1] = [f"<i><font color = Gray> vs {team.opponent.name} {'(h)' if t
 
 styled_table = df.style.set_table_styles([
     {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
-    {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #f0f0f0;'},
+    {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #e0e0f0;'},
     {'selector':'tr', 'props':'line-height: 16px'},
     {'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
     {'selector':'th', 'props':'padding: 0px 5px;'},
     ])
 
-imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'860', 'crop-y':'23'})
+imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'850', 'crop-y':'23'})
 
