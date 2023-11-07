@@ -12,11 +12,16 @@ class CanvasSection:
         self.h=round(height)
         self.x = round(x)
         self.y = round(y)
-        print(self.x, self.y, self.w, self.h)
 
     def fill(self, badge):
         img=Image.open(badge)
-        box = (0, img.height/2-self.h/2, img.width, img.height/2+self.h/2)
+        aspect_ratio=self.w/self.h
+        print(aspect_ratio)
+        print(img.width, img.width/aspect_ratio)
+        if self.w >= self.h:
+            box = (0, img.height/2-(img.width/aspect_ratio)/2, img.width, img.height/2+(img.height/aspect_ratio)/2)
+        else:
+            box = (img.width/2-(img.height*aspect_ratio)/2, 0, img.width/2+(img.height*aspect_ratio)/2, img.height)
         self.img = img.crop(box)
 
 
@@ -30,9 +35,7 @@ class Canvas:
         for row in table.rows:
             for cell in row.cells:
                 self.sections.append(CanvasSection(cell.width*self.image.width, row.height*self.image.height, x, y))
-                print(cell.width)
                 x += cell.width*self.image.width
-                print(f"x={x}")
             y += row.height*self.image.height
             x = 0
 
@@ -67,7 +70,6 @@ class TableRow:
         for i in range(len(self.cells)-1):
             self.cells[i].width = (self.cells[i].gd-self.cells[i+1].gd+1)/total_parts
         self.cells[-1].width = 1/total_parts
-        print(f"cell widths = {[c.width for c in self.cells]}")
 
     def set_height(self, height):
         self.height=height
