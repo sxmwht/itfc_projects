@@ -4,6 +4,19 @@ import imgkit
 from get_table import get_table
 import pandas as pd
 
+from PIL import Image
+
+class CanvasSection:
+    def __init__(self, width, height):
+        self.width=width
+        self.height=height
+
+class Canvas:
+    def divide(self, table):
+        self.sections=[]
+        for row in tables.rows:
+            for cell in tables.cell:
+                self.sections.append(CanvasSection(cell.width*self.width, row.height*self.height))
 
 class TableCell:
     def __init__ (self, team):
@@ -31,6 +44,10 @@ class TableRow:
             self.cells[i].width = round((self.cells[i].gd-self.cells[i+1].gd+1)/total_parts*100)
         self.cells[-1].width = round(1/total_parts*100)
 
+    def set_height(self, height):
+        print(height)
+        self.height=height
+
 
 class ProportionalTable:
     def __init__ (self, team=None):
@@ -56,6 +73,12 @@ class ProportionalTable:
             for i in range(len(r.cells), 24):
                 r.cells.append(None)
 
+    def calculate_heights(self):
+        total_points = self.rows[0].cells[0].points - self.rows[-1].cells[0].points + len(self.rows)
+        for i, row in enumerate(self.rows[:-1]):
+            row.set_height((row.cells[0].points-self.rows[i+1].cells[0].points+1)/total_points*100)
+        self.rows[-1].height=1/total_points*100
+
 table = get_table()
 
 pt = ProportionalTable()
@@ -68,39 +91,25 @@ for i in range(1, 25):
 #pt.pad()
 pt.print()
 
-row_heights = [(pt.rows[i].cells[0].points - pt.rows[i+1].cells[0].points)*16 for i in range(0,len(pt.rows)-1)]
+pt.calculate_heights()
+
+print([p.height for p in pt.rows])
+
+
 
 df = pd.DataFrame([[c.team if c is not None else None for c in r.cells] for r in pt.rows])
 
 print(df)
 
-styled_table = df.style.set_table_styles([
-    {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
-    {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #e0e0f0;'},
-    {'selector':'tbody tr:nth-child(1)', 'props':f'height: {row_heights[0]}px;'},
-    {'selector':'tbody tr:nth-child(2)', 'props':f'height: {row_heights[1]}px;'},
-    {'selector':'tbody tr:nth-child(3)', 'props':f'height: {row_heights[2]}px;'},
-    {'selector':'tbody tr:nth-child(4)', 'props':f'height: {row_heights[3]}px;'},
-    {'selector':'tbody tr:nth-child(5)', 'props':f'height: {row_heights[4]}px;'},
-    {'selector':'tbody tr:nth-child(6)', 'props':f'height: {row_heights[5]}px;'},
-    {'selector':'tbody tr:nth-child(7)', 'props':f'height: {row_heights[6]}px;'},
-    {'selector':'tbody tr:nth-child(8)', 'props':f'height: {row_heights[7]}px;'},
-    {'selector':'tbody tr:nth-child(9)', 'props':f'height: {row_heights[8]}px;'},
-    {'selector':'tbody tr:nth-child(10)', 'props':f'height: {row_heights[9]}px;'},
-    {'selector':'tbody tr:nth-child(11)', 'props':f'height: {row_heights[10]}px;'},
-    {'selector':'tbody tr:nth-child(12)', 'props':f'height: {row_heights[11]}px;'},
-    {'selector':'tbody tr:nth-child(13)', 'props':f'height: {row_heights[12]}px;'},
-    {'selector':'tbody tr:nth-child(14)', 'props':f'height: {row_heights[13]}px;'},
-    {'selector':'tbody tr:nth-child(15)', 'props':f'height: {row_heights[14]}px;'},
-    {'selector':'tbody tr:nth-child(16)', 'props':f'height: {row_heights[15]}px;'},
-    {'selector':'tbody tr:nth-child(17)', 'props':f'height: {row_heights[16]}px;'},
-    {'selector':'tbody tr:nth-child(18)', 'props':f'height: {row_heights[17]}px;'},
-    {'selector':'tr', 'props':'line-height: 16px'},
-    #{'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
-    {'selector':'tbody tr:nth-child(1) td:nth-child(1)', 'props':'colspan: "2";'},
-    {'selector':'th', 'props':'padding: 0px 5px;'},
-    ])
+width=300
+height=300
 
-styled_table.to_html("output.html")
-imgkit.from_string(styled_table.to_html(), "table.png", options={'enable-local-file-access':'', 'quality':'100' })
+img = Canvas(Image.new("RGB", (width,height)))
+
+img.divide(pt)
+
+print(img.sections)
+
+
+
 
