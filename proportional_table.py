@@ -3,24 +3,48 @@
 import imgkit
 from get_table import get_table
 import pandas as pd
-
+import re
 from PIL import Image
 
 class CanvasSection:
-    def __init__(self, width, height):
-        self.width=width
-        self.height=height
+    def __init__(self, width, height, x, y):
+        self.w=round(width)
+        self.h=round(height)
+        self.x = round(x)
+        self.y = round(y)
+        print(self.x, self.y, self.w, self.h)
+
+    def fill(self, badge):
+        img=Image.open(badge)
+        box = (0, img.height/2-self.h/2, img.width, img.height/2+self.h/2)
+        self.img = img.crop(box)
+
 
 class Canvas:
+    def __init__(self, image):
+        self.image = image
     def divide(self, table):
         self.sections=[]
-        for row in tables.rows:
-            for cell in tables.cell:
-                self.sections.append(CanvasSection(cell.width*self.width, row.height*self.height))
+        x=0
+        y=0
+        for row in table.rows:
+            for cell in row.cells:
+                self.sections.append(CanvasSection(cell.width*self.image.width, row.height*self.image.height, x, y))
+                print(cell.width)
+                x += cell.width*self.image.width
+                print(f"x={x}")
+            y += row.height*self.image.height
+            x = 0
+
+    def paint(self):
+        for sec in self.sections:
+            box = (sec.x, sec.y, sec.x+sec.w, sec.y+sec.h)
+            self.image.paste(sec.img.resize((sec.w, sec.h)), box)
+
 
 class TableCell:
     def __init__ (self, team):
-        self.team = team.Team
+        self.team = re.sub(" ", "-", team.Team.lower())
         self.points = team.Pts
         self.gd = team.GD
         self.gf = team.GF
@@ -41,11 +65,11 @@ class TableRow:
     def recalculate_cell_widths(self):
         total_parts = self.cells[0].gd - self.cells[-1].gd + len(self.cells)
         for i in range(len(self.cells)-1):
-            self.cells[i].width = round((self.cells[i].gd-self.cells[i+1].gd+1)/total_parts*100)
-        self.cells[-1].width = round(1/total_parts*100)
+            self.cells[i].width = (self.cells[i].gd-self.cells[i+1].gd+1)/total_parts
+        self.cells[-1].width = 1/total_parts
+        print(f"cell widths = {[c.width for c in self.cells]}")
 
     def set_height(self, height):
-        print(height)
         self.height=height
 
 
@@ -76,8 +100,8 @@ class ProportionalTable:
     def calculate_heights(self):
         total_points = self.rows[0].cells[0].points - self.rows[-1].cells[0].points + len(self.rows)
         for i, row in enumerate(self.rows[:-1]):
-            row.set_height((row.cells[0].points-self.rows[i+1].cells[0].points+1)/total_points*100)
-        self.rows[-1].height=1/total_points*100
+            row.set_height((row.cells[0].points-self.rows[i+1].cells[0].points+1)/total_points)
+        self.rows[-1].height=1/total_points
 
 table = get_table()
 
@@ -93,23 +117,20 @@ pt.print()
 
 pt.calculate_heights()
 
-print([p.height for p in pt.rows])
-
-
-
 df = pd.DataFrame([[c.team if c is not None else None for c in r.cells] for r in pt.rows])
 
 print(df)
 
-width=300
-height=300
+width=600
+height=800
 
-img = Canvas(Image.new("RGB", (width,height)))
+canvas = Canvas(Image.new("RGB", (width,height)))
 
-img.divide(pt)
+canvas.divide(pt)
 
-print(img.sections)
+for section, cell in zip(canvas.sections, [cell for row in pt.rows for cell in row.cells]):
+    section.fill(f"./img/logos/large/{cell.team}.png")
 
-
-
+canvas.paint()
+canvas.image.show()
 
