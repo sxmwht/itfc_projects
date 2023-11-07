@@ -16,8 +16,6 @@ class CanvasSection:
     def fill(self, badge):
         img=Image.open(badge)
         aspect_ratio=self.w/self.h
-        print(aspect_ratio)
-        print(img.width, img.width/aspect_ratio)
         if self.w >= self.h:
             box = (0, img.height/2-(img.width/aspect_ratio)/2, img.width, img.height/2+(img.height/aspect_ratio)/2)
         else:
@@ -111,11 +109,9 @@ pt = ProportionalTable()
 
 df = pd.DataFrame({})
 
+
 for i in range(1, 25):
     pt.add_team(table.loc[i])
-
-#pt.pad()
-pt.print()
 
 pt.calculate_heights()
 
@@ -134,5 +130,53 @@ for section, cell in zip(canvas.sections, [cell for row in pt.rows for cell in r
     section.fill(f"./img/logos/large/{cell.team}.png")
 
 canvas.paint()
-canvas.image.show()
+#canvas.image.show()
 
+row_heights = []
+bgs=[]
+print(table['Pts'])
+total_points = table['Pts'][1]-table['Pts'][24]+len(table['Pts'])
+for r in range(1,24):
+    row_heights.append((table['Pts'][r]-table['Pts'][r+1]+1)*16)
+
+for r in range(1,25):
+    bgs.append(f"/home/sjw/projects/itfc_projects/img/logos/large/{re.sub(' ', '-', table['Team'][r].lower())}.png")
+for b in bgs:
+    print(b)
+
+
+print(row_heights)
+
+styled_table = table.style.set_table_styles([
+    {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
+    {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #e0e0f0;'},
+    {'selector':'tr', 'props':'line-height: 16px'},
+    {'selector':'tr:nth-child(1)', 'props':f'line-height: {row_heights[0]}px; background: url("{bgs[1]}");'},
+    {'selector':'tr:nth-child(2)', 'props':f'line-height: {row_heights[1]}px; background: url("{bgs[2]}");'},
+    {'selector':'tr:nth-child(3)', 'props':f'line-height: {row_heights[2]}px; background: url("{bgs[3]}");'},
+    {'selector':'tr:nth-child(4)', 'props':f'line-height: {row_heights[3]}px; background: url("{bgs[4]}");'},
+    {'selector':'tr:nth-child(5)', 'props':f'line-height: {row_heights[4]}px; background: url("{bgs[5]}");'},
+    {'selector':'tr:nth-child(6)', 'props':f'line-height: {row_heights[5]}px; background: url("{bgs[6]}");'},
+    {'selector':'tr:nth-child(7)', 'props':f'line-height: {row_heights[6]}px; background: url("{bgs[7]}");'},
+    {'selector':'tr:nth-child(8)', 'props':f'line-height: {row_heights[7]}px; background: url("{bgs[8]}");'},
+    {'selector':'tr:nth-child(9)', 'props':f'line-height: {row_heights[8]}px; background: url("{bgs[9]}");'},
+    {'selector':'tr:nth-child(10)', 'props':f'line-height: {row_heights[9]}px; background: url("{bgs[10]}");'},
+    {'selector':'tr:nth-child(11)', 'props':f'line-height: {row_heights[10]}px; background: url("{bgs[11]}");'},
+    {'selector':'tr:nth-child(12)', 'props':f'line-height: {row_heights[11]}px; background: url("{bgs[12]}");'},
+    {'selector':'tr:nth-child(13)', 'props':f'line-height: {row_heights[12]}px; background: url("{bgs[13]}");'},
+    {'selector':'tr:nth-child(14)', 'props':f'line-height: {row_heights[13]}px; background: url("{bgs[14]}");'},
+    {'selector':'tr:nth-child(15)', 'props':f'line-height: {row_heights[14]}px; background: url("{bgs[15]}");'},
+    {'selector':'tr:nth-child(16)', 'props':f'line-height: {row_heights[15]}px; background: url("{bgs[16]}");'},
+    {'selector':'tr:nth-child(17)', 'props':f'line-height: {row_heights[16]}px; background: url("{bgs[17]}");'},
+    {'selector':'tr:nth-child(18)', 'props':f'line-height: {row_heights[17]}px; background: url("{bgs[18]}");'},
+    {'selector':'tr:nth-child(19)', 'props':f'line-height: {row_heights[18]}px; background: url("{bgs[19]}");'},
+    {'selector':'tr:nth-child(20)', 'props':f'line-height: {row_heights[19]}px; background: url("{bgs[20]}");'},
+    {'selector':'tr:nth-child(21)', 'props':f'line-height: {row_heights[20]}px; background: url("{bgs[21]}");'},
+    {'selector':'tr:nth-child(22)', 'props':f'line-height: {row_heights[21]}px; background: url("{bgs[22]}");'},
+    {'selector':'tr:nth-child(23)', 'props':f'line-height: {row_heights[22]}px; background: url("{bgs[23]}");'},
+    {'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
+    {'selector':'th', 'props':'padding: 0px 5px;'},
+  ])
+
+(styled_table.to_html("output.html"))
+imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'850', 'crop-y':'23'})
