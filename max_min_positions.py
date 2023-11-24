@@ -195,8 +195,6 @@ elif "Friday" in date:
         if "Sunday" in next_date:
             collect_fixtures(match_blocks[2], fixtures)
 
-print(fixtures)
-
 # make names match between BBC sport and TWTD
 for f in fixtures:
     for t in f:
@@ -224,7 +222,6 @@ for i in range(1,num_teams):
 
 # replace the names in "fixtures" with their team object
 for f in fixtures:
-    print(f)
     for i in [0,1]:
         f[i] = [team for team in teams if team.shortened_name == f[i]][0]
 
@@ -243,9 +240,6 @@ for t in teams:
 for f in fixtures:
     print([t.name for t in f])
 
-for t in teams:
-    print(t.name, t.positions)
-
 df = pd.DataFrame({})
 
 df[0] = current_table.Team
@@ -253,7 +247,9 @@ for i, team in enumerate(teams):
     df[i+1] = list(map(choose_image, team.positions))
 
 # construct an array of opponents
-df[len(df[0])+1] = [f"<i><font color = Gray> vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</font></i>" if team.opponent is not None else "" for team in teams]
+df[len(df[0])+1] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.Pts]
+df[len(df[0])+2] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.GD]
+df[len(df[0])+3] = [f"<p style='color:Gray;font-style:italic'>vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
 
 styled_table = df.style.set_table_styles([
     {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
@@ -261,7 +257,20 @@ styled_table = df.style.set_table_styles([
     {'selector':'tr', 'props':'line-height: 16px'},
     {'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
     {'selector':'th', 'props':'padding: 0px 5px;'},
-    ])
+  ])
 
-imgkit.from_string(styled_table.to_html(), "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'850', 'crop-y':'23'})
+key='''<br><p style='font-family:Louis George Cafe;font-size:12px'>
+       <img src="{}"></img> = easy move up<br>
+       <img src="{}"></img> = easy move down <br>
+       <img src="{}"></img> = unlikely move up (requires a GD swing > 3)<br>
+       <img src="{}"></img> = unlikely move down (requires a GD swing > 3)<br>
+       <img src="{}"></img> = impossible position (due to other fixtures)
+       </p>'''.format( os.path.abspath("./img/likely_move.png"),
+                       os.path.abspath("./img/likely_move_down.png"),
+                       os.path.abspath("./img/unlikely_move.png"),
+                       os.path.abspath("./img/unlikely_move_down.png"),
+                       os.path.abspath("./img/impossible.png")
+                    )
+
+imgkit.from_string(styled_table.to_html() + key, "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'900', 'crop-y':'37'})
 
