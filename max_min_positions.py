@@ -73,8 +73,9 @@ def find_limiting_fixtures(team, fixtures):
             team.limiting_fixtures.append(f)
 
 def get_teams_within_3_below(team):
-    team.teams_behind = [t for t in teams[team.pos:] if t.points >= team.points - 3 if t.is_playing]
-    team.teams_chasing = [t for t in team.teams_behind if (t.points > team.points - 3 or (t.points == team.points - 3 and t.gd > team.gd - 4))]
+    team.teams_behind = [t for t in teams[team.pos:] if t.points >= team.points - 3 if team in t.teams_reachable]
+    team.teams_chasing = [t for t in team.teams_behind if team in t.teams_easily_reachable]
+
 
 def find_helping_fixtures(team, fixtures):
     # a fixture is defined as a team's "helping fixture" if its result is
@@ -231,6 +232,7 @@ for t in teams:
 
 for t in teams:
     get_teams_within_3_above(t)
+for t in teams:
     get_teams_within_3_below(t)
     find_limiting_fixtures(t, fixtures)
     find_helping_fixtures(t, fixtures)
@@ -260,10 +262,10 @@ styled_table = df.style.set_table_styles([
   ])
 
 key='''<br><p style='font-family:Louis George Cafe;font-size:12px'>
-       <img src="{}"></img> = easy move up<br>
-       <img src="{}"></img> = easy move down <br>
-       <img src="{}"></img> = unlikely move up (requires a GD swing > 3)<br>
-       <img src="{}"></img> = unlikely move down (requires a GD swing > 3)<br>
+       <img src="{}"></img> = possible move up<br>
+       <img src="{}"></img> = possible move down <br>
+       <img src="{}"></img> = possible move up (that requires a GD swing > 3)<br>
+       <img src="{}"></img> = possible move down (that requires a GD swing > 3)<br>
        <img src="{}"></img> = impossible position (due to other fixtures)
        </p>'''.format( os.path.abspath("./img/likely_move.png"),
                        os.path.abspath("./img/likely_move_down.png"),
