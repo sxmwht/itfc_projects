@@ -195,6 +195,9 @@ elif "Friday" in date:
         next_date = match_blocks[2].find(class_="date-divider").string
         if "Sunday" in next_date:
             collect_fixtures(match_blocks[2], fixtures)
+            next_date = match_blocks[3].find(class_="date-divider").string
+            if "Monday" in next_date:
+                collect_fixtures(match_blocks[3], fixtures)
 
 # make names match between BBC sport and TWTD
 for f in fixtures:
