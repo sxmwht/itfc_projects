@@ -11,7 +11,7 @@ raw = requests.get(url)
 
 soup = bs(raw.text, "html.parser")
 
-pattern = re.compile("\d - \d")
+pattern = re.compile("\d-\d")
 
 scores = []
 for td in soup.find_all("td"):
