@@ -11,6 +11,8 @@ import argparse
 
 from datetime import datetime
 
+from get_fixtures import collect_fixtures
+
 def choose_image(char):
     if char == 'x':
         return '<img src="{}"></img>'.format(os.path.abspath(f"./img/logos/{re.sub(' ', '-', team.name).lower()}.png"))
@@ -137,40 +139,10 @@ parser.add_argument('-d', '--debug', action="store_true", help="Use the download
 
 args = parser.parse_args()
 
-date=datetime.today().strftime('%Y-%m-%d')
+fixtures = collect_fixtures()
+
 
 # get upcoming fixtures
-
-headers = {
-    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0',
-    'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'en-GB',
-    # 'Accept-Encoding': 'gzip, deflate, br, zstd',
-    'Origin': 'https://www.efl.com',
-    'DNT': '1',
-    'Connection': 'keep-alive',
-    'Referer': 'https://www.efl.com/',
-    'Sec-Fetch-Dest': 'empty',
-    'Sec-Fetch-Mode': 'cors',
-    'Sec-Fetch-Site': 'cross-site',
-    'Sec-GPC': '1',
-    # Requests doesn't support trailers
-    # 'TE': 'trailers',
-}
-
-params = {
-    'page.size': '12',
-    'seasonID': '2025',
-    'competitionID': '10',
-    'from': date,
-    'to': '2026-10-20',
-}
-
-response = requests.get('https://multi-club-matches.webapi.gc.eflservices.co.uk/v2/matches', params=params, headers=headers)
-
-hometeams = [m['attributes']['homeTeam']['name'] for m in response.json()['data']]
-awayteams = [m['attributes']['awayTeam']['name'] for m in response.json()['data']]
-fixtures=list([list(m) for m in zip(hometeams,awayteams)])
 
 for f in fixtures:
     for t in f:
