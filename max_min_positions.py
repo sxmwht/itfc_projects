@@ -9,6 +9,8 @@ import imgkit
 import os
 import argparse
 
+from datetime import datetime
+
 def choose_image(char):
     if char == 'x':
         return '<img src="{}"></img>'.format(os.path.abspath(f"./img/logos/{re.sub(' ', '-', team.name).lower()}.png"))
@@ -36,17 +38,6 @@ class Team:
     def __init__(self, pos, entry):
         self.pos = pos
         self.name = entry.Team
-        self.shortened_name = entry.Team.split()[0]
-        if self.name == "Preston North End":
-            self.shortened_name = self.name
-        elif self.name == "Sheffield Wednesday":
-            self.shortened_name = "Sheff Wed"
-        elif self.name == "Bristol City":
-            self.shortened_name = "Bristol City"
-        elif self.name == "Queens Park Rangers":
-            self.shortened_name = "QPR"
-        elif self.name == "West Bromwich Albion":
-            self.shortened_name = "West Brom"
         self.points = entry.Pts
         self.gd = entry.GD
         self.is_playing = False
@@ -146,60 +137,41 @@ parser.add_argument('-d', '--debug', action="store_true", help="Use the download
 
 args = parser.parse_args()
 
+date=datetime.today().strftime('%Y-%m-%d')
+
 # get upcoming fixtures
-fixtures_url = "https://www.theguardian.com/football/championship/fixtures"
 
-if (args.debug):
-    data = open("debug_fixtures.html").read()
-else:
-    data = requests.get(fixtures_url).text
+headers = {
+    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-GB',
+    # 'Accept-Encoding': 'gzip, deflate, br, zstd',
+    'Origin': 'https://www.efl.com',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Referer': 'https://www.efl.com/',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'cross-site',
+    'Sec-GPC': '1',
+    # Requests doesn't support trailers
+    # 'TE': 'trailers',
+}
 
-soup = bs(data, "html.parser")
+params = {
+    'page.size': '12',
+    'seasonID': '2025',
+    'competitionID': '10',
+    'from': date,
+    'to': '2026-10-20',
+}
 
-def is_match_block(cls):
-    return cls and cls == "football-matches__day"
+response = requests.get('https://multi-club-matches.webapi.gc.eflservices.co.uk/v2/matches', params=params, headers=headers)
 
-def is_fixture(class_):
-    return class_ and class_ == "football-match football-match--fixture"
+hometeams = [m['attributes']['homeTeam']['name'] for m in response.json()['data']]
+awayteams = [m['attributes']['awayTeam']['name'] for m in response.json()['data']]
+fixtures=list([list(m) for m in zip(hometeams,awayteams)])
 
-def is_team(class_):
-    return class_ and re.compile("team-name__long").search(class_)
-
-def collect_fixtures(match_block, fixtures):
-    for f in match_block.find_all(class_=is_fixture):
-        match_ = [t.string for t in f.find_all(class_=is_team)]
-        #if f.find(class_="sp-c-fixture__block sp-c-fixture__block--time gel-brevier"):
-        fixtures.append(match_)
-        #else:
-        #    for t in match_:
-        #        postponed[t] = f.find(class_="gel-brevier sp-c-fixture__status").text
-
-match_blocks = soup.find_all(class_=is_match_block)
-fixtures  = []
-postponed = {}
-collect_fixtures(match_blocks[0], fixtures)
-
-date = match_blocks[0].find(class_="date-divider").string
-if "Tuesday" in date:
-    next_date = match_blocks[1].find(class_="date-divider").string
-    if "Wednesday" in next_date:
-        collect_fixtures(match_blocks[1], fixtures)
-elif "Saturday" in date:
-    next_date = match_blocks[1].find(class_="date-divider").string
-    if "Sunday" in next_date:
-        collect_fixtures(match_blocks[1], fixtures)
-elif "Friday" in date:
-    next_date = match_blocks[1].find(class_="date-divider").string
-    if "Saturday" in next_date:
-        collect_fixtures(match_blocks[1], fixtures)
-        next_date = match_blocks[2].find(class_="date-divider").string
-        if "Sunday" in next_date:
-            collect_fixtures(match_blocks[2], fixtures)
-            next_date = match_blocks[3].find(class_="date-divider").string
-            if "Monday" in next_date:
-                collect_fixtures(match_blocks[3], fixtures)
-
-# make names match between BBC sport and TWTD
 for f in fixtures:
     for t in f:
         if t == "Brighton & Hove Albion":
@@ -214,7 +186,7 @@ if args.debug:
     current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
     #current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
 else:
-    current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
+    current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[2]
 current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
 
 num_teams = len(current_table.Team)+1
@@ -227,7 +199,7 @@ for i in range(1,num_teams):
 # replace the names in "fixtures" with their team object
 for f in fixtures:
     for i in [0,1]:
-        f[i] = [team for team in teams if team.shortened_name == f[i]][0]
+        f[i] = [team for team in teams if team.name == f[i]][0]
 
 for t in teams:
     t.is_playing = False # will be set by get_opponent if they are playing
