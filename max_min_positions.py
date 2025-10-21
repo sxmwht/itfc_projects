@@ -8,12 +8,13 @@ import sys
 import imgkit
 import os
 import argparse
+from itertools import repeat
 
 from datetime import datetime
 
 from get_fixtures import collect_fixtures
 
-def choose_image(char):
+def choose_image(team, char):
     if char == 'x':
         return '<img src="{}"></img>'.format(os.path.abspath(f"./img/logos/{re.sub(' ', '-', team.name).lower()}.png"))
     if char == 'i':
@@ -45,7 +46,7 @@ class Team:
         self.is_playing = False
         self.opponent = None
 
-def get_teams_within_3_above(team):
+def get_teams_within_3_above(team, teams):
     if team.is_playing:
         team.teams_reachable = [t for t in teams[:team.pos-1] if t.points <= team.points + 3]
         team.teams_easily_reachable = [t for t in team.teams_reachable if (t.points < team.points + 3 or (t.points == team.points + 3 and t.gd < team.gd + 4))]
@@ -65,7 +66,7 @@ def find_limiting_fixtures(team, fixtures):
         if any([True if t in teams_3_ahead else False for t in f]) and all([True if t in teams_1_to_3_ahead else False for t in f]):
             team.limiting_fixtures.append(f)
 
-def get_teams_within_3_below(team):
+def get_teams_within_3_below(team, teams):
     team.teams_behind = [t for t in teams[team.pos:] if t.points >= team.points - 3 if team in t.teams_reachable]
     team.teams_chasing = [t for t in team.teams_behind if team in t.teams_easily_reachable]
 
@@ -127,99 +128,107 @@ def get_opponent(team, teams, fixtures):
                 team.is_at_home = False
             break
 
-# argument handling
-parser = argparse.ArgumentParser(description="Display what a league table could \
-        look like after the next round of fixtures")
+def run():
 
-parser.add_argument('competition', metavar='competition', default='championship',
-        choices=["premier-league", "championship", "league-one", "league-two"],
-        nargs='?', help="The competition to analyse")
+    # argument handling
+    parser = argparse.ArgumentParser(description="Display what a league table could \
+            look like after the next round of fixtures")
 
-parser.add_argument('-d', '--debug', action="store_true", help="Use the downloaded fixtures/table")
+    parser.add_argument('competition', metavar='competition', default='championship',
+            choices=["premier-league", "championship", "league-one", "league-two"],
+            nargs='?', help="The competition to analyse")
 
-args = parser.parse_args()
+    parser.add_argument('-d', '--debug', action="store_true", help="Use the downloaded fixtures/table")
 
-fixtures = collect_fixtures()
+    args = parser.parse_args()
 
+    fixtures = collect_fixtures()
 
-# get upcoming fixtures
+    print(fixtures)
 
-for f in fixtures:
-    for t in f:
-        if t == "Brighton & Hove Albion":
-            idx = f.index("Brighton & Hove Albion")
-            f[idx]= "Brighton and Hove Albion"
-        if t == "Milton Keynes Dons":
-            idx = f.index("Milton Keynes Dons")
-            f[idx]= "MK Dons"
+    # get upcoming fixtures
 
-# get the current table (thanks Gav)
-if args.debug:
-    current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
-    #current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
-else:
-    current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[2]
-current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
+    for f in fixtures:
+        for t in f:
+            if t == "Brighton & Hove Albion":
+                idx = f.index("Brighton & Hove Albion")
+                f[idx]= "Brighton and Hove Albion"
+            if t == "Milton Keynes Dons":
+                idx = f.index("Milton Keynes Dons")
+                f[idx]= "MK Dons"
 
-num_teams = len(current_table.Team)+1
+    # get the current table (thanks Gav)
+    if args.debug:
+        current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
+        #current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
+    else:
+        current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[2]
+    current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
 
-teams = []
+    num_teams = len(current_table.Team)+1
 
-for i in range(1,num_teams):
-    teams.append(Team(i, current_table.loc[i]))
+    teams = []
 
-# replace the names in "fixtures" with their team object
-for f in fixtures:
-    for i in [0,1]:
-        f[i] = [team for team in teams if team.name == f[i]][0]
+    for i in range(1,num_teams):
+        teams.append(Team(i, current_table.loc[i]))
 
-for t in teams:
-    t.is_playing = False # will be set by get_opponent if they are playing
-    get_opponent(t, teams, fixtures)
+    # replace the names in "fixtures" with their team object
+    for f in fixtures:
+        for i in [0,1]:
+            f[i] = [team for team in teams if team.name == f[i]][0]
 
-for t in teams:
-    get_teams_within_3_above(t)
-for t in teams:
-    get_teams_within_3_below(t)
-    find_limiting_fixtures(t, fixtures)
-    find_helping_fixtures(t, fixtures)
-    calculate_possible_positions(t)
+    for t in teams:
+        t.is_playing = False # will be set by get_opponent if they are playing
+        get_opponent(t, teams, fixtures)
 
-# prints the fixtures
-for f in fixtures:
-    print([t.name for t in f])
+    for t in teams:
+        get_teams_within_3_above(t,teams)
+    for t in teams:
+        get_teams_within_3_below(t,teams)
+        find_limiting_fixtures(t, fixtures)
+        find_helping_fixtures(t, fixtures)
+        calculate_possible_positions(t)
 
-df = pd.DataFrame({})
+    # prints the fixtures
+    for f in fixtures:
+        print([t.name for t in f])
 
-df[0] = current_table.Team
-for i, team in enumerate(teams):
-    df[i+1] = list(map(choose_image, team.positions))
+    df = pd.DataFrame({})
 
-# construct an array of opponents
-df[len(df[0])+1] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.Pts]
-df[len(df[0])+2] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.GD]
-df[len(df[0])+3] = [f"<p style='color:Gray;font-style:italic'>vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
+    df[0] = current_table.Team
+    for i, team in enumerate(teams):
+        df[i+1] = list(map(choose_image, repeat(team), team.positions))
 
-styled_table = df.style.set_table_styles([
-    {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
-    {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #e0e0f0;'},
-    {'selector':'tr', 'props':'line-height: 16px'},
-    {'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
-    {'selector':'th', 'props':'padding: 0px 5px;'},
-  ])
+    # construct an array of opponents
+    df[len(df[0])+1] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.Pts]
+    df[len(df[0])+2] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.GD]
+    df[len(df[0])+3] = [f"<p style='color:Gray;font-style:italic'>vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
 
-key='''<br><p style='font-family:Louis George Cafe;font-size:12px'>
-       <img src="{}"></img> = possible move up<br>
-       <img src="{}"></img> = possible move down <br>
-       <img src="{}"></img> = possible move up (that requires a GD swing > 3)<br>
-       <img src="{}"></img> = possible move down (that requires a GD swing > 3)<br>
-       <img src="{}"></img> = impossible position (due to other fixtures)
-       </p>'''.format( os.path.abspath("./img/likely_move.png"),
-                       os.path.abspath("./img/likely_move_down.png"),
-                       os.path.abspath("./img/unlikely_move.png"),
-                       os.path.abspath("./img/unlikely_move_down.png"),
-                       os.path.abspath("./img/impossible.png")
-                    )
+    styled_table = df.style.set_table_styles([
+        {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
+        {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #e0e0f0;'},
+        {'selector':'tbody tr:nth-child(2)', 'props':'border-bottom: 1px dashed #444444;'},
+        {'selector':'tbody tr:nth-child(6)', 'props':'border-bottom: 1px dashed #444444;'},
+        {'selector':'tbody tr:nth-child(21)', 'props':'border-bottom: 1px dashed #444444;'},
+        {'selector':'tr', 'props':'line-height: 16px'},
+        {'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
+        {'selector':'th', 'props':'padding: 0px 5px;'},
+      ])
 
-imgkit.from_string(styled_table.to_html() + key, "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'900', 'crop-y':'37'})
+    key='''<br><p style='font-family:Louis George Cafe;font-size:12px'>
+           <img src="{}"></img> = possible move up<br>
+           <img src="{}"></img> = possible move down <br>
+           <img src="{}"></img> = possible move up (that requires a GD swing > 3)<br>
+           <img src="{}"></img> = possible move down (that requires a GD swing > 3)<br>
+           <img src="{}"></img> = impossible position (due to other fixtures)
+           </p>'''.format( os.path.abspath("./img/likely_move.png"),
+                           os.path.abspath("./img/likely_move_down.png"),
+                           os.path.abspath("./img/unlikely_move.png"),
+                           os.path.abspath("./img/unlikely_move_down.png"),
+                           os.path.abspath("./img/impossible.png")
+                        )
 
+    imgkit.from_string(styled_table.to_html() + key, "out.png", options={'enable-local-file-access':'', 'quality':'100', 'crop-w':'900', 'crop-y':'37'})
+
+if __name__ == "__main__":
+    run()
