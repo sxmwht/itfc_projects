@@ -41,8 +41,8 @@ class Team:
     def __init__(self, pos, entry):
         self.pos = pos
         self.name = entry.Team
-        self.points = entry.Pts
-        self.gd = entry.GD
+        self.points = int(entry.Pts)
+        self.gd = int(entry.GD)
         self.is_playing = False
         self.opponent = None
 
@@ -144,8 +144,6 @@ def run():
 
     fixtures = collect_fixtures()
 
-    print(fixtures)
-
     # get upcoming fixtures
 
     for f in fixtures:
@@ -162,15 +160,17 @@ def run():
         current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[1]
         #current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
     else:
-        current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0, header=0)[2]
-    current_table = current_table.drop(["GF", "GA", "W", "D", "L", "GF.1", "GA.1", "W.1", "D.1", "L.1", "Unnamed: 15", "P", "Unnamed: 3", "Unnamed: 9"],axis=1)
+        current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0)[2]
+    current_table = current_table.drop([2,3,4,5,6,7,8,9,10,11,12,13,14,15],axis=1)
 
-    num_teams = len(current_table.Team)+1
+    current_table.columns=['Team','GD','Pts']
+
+    num_teams = len(current_table.Team)
 
     teams = []
 
     for i in range(1,num_teams):
-        teams.append(Team(i, current_table.loc[i]))
+        teams.append(Team(i, current_table.iloc[i]))
 
     # replace the names in "fixtures" with their team object
     for f in fixtures:
@@ -197,15 +197,18 @@ def run():
 
     df[0] = current_table.Team
     for i, team in enumerate(teams):
-        df[i+1] = list(map(choose_image, repeat(team), team.positions))
+        df[i+1] = [" "] + list(map(choose_image, repeat(team), team.positions))
 
     # construct an array of opponents
-    df[len(df[0])+1] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.Pts]
-    df[len(df[0])+2] = [f"<p style='color:Gray;text-align:right'>{p}</p>" for p in current_table.GD]
-    df[len(df[0])+3] = [f"<p style='color:Gray;font-style:italic'>vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
+    df[len(df[0])+1] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.Pts]
+    df[len(df[0])+2] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.GD]
+    df[len(df[0])+3] = ["Next Fixture"] + [f"<p style='font-style:italic'>vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
+
+    print(df)
 
     styled_table = df.style.set_table_styles([
         {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
+        {'selector':'tbody tr:nth-child(1)', 'props':'font-weight:bold;background: #e0e0f0;'},
         {'selector':'tbody tr:nth-child(2n+1)', 'props':'background: #e0e0f0;'},
         {'selector':'tbody tr:nth-child(2)', 'props':'border-bottom: 1px dashed #444444;'},
         {'selector':'tbody tr:nth-child(6)', 'props':'border-bottom: 1px dashed #444444;'},
