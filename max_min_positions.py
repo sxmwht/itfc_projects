@@ -204,8 +204,6 @@ def run():
     df[len(df[0])+2] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.GD]
     df[len(df[0])+3] = ["Next Fixture"] + [f"<p style='font-style:italic'>vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
 
-    print(df)
-
     styled_table = df.style.set_table_styles([
         {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
         {'selector':'tbody tr:nth-child(1)', 'props':'font-weight:bold;background: #e0e0f0;'},
@@ -213,17 +211,31 @@ def run():
         {'selector':'tbody tr:nth-child(3)', 'props':'border-bottom: 1px dashed #444444;'},
         {'selector':'tbody tr:nth-child(7)', 'props':'border-bottom: 1px dashed #444444;'},
         {'selector':'tbody tr:nth-child(22)', 'props':'border-bottom: 1px dashed #444444;'},
+
+        {'selector':'tbody tr:nth-child(1)', 'props':'background: #ffffff;'},
+        {'selector':'tbody tr:nth-child(2)', 'props':'background: #e0ffe0;'},
+        {'selector':'tbody tr:nth-child(3)', 'props':'background: #e0f0e0;'},
+
+        {'selector':'tbody tr:nth-child(4)', 'props':'background: #d5d5ff;'},
+        {'selector':'tbody tr:nth-child(5)', 'props':'background: #e0e0f0;'},
+        {'selector':'tbody tr:nth-child(6)', 'props':'background: #d5d5ff;'},
+        {'selector':'tbody tr:nth-child(7)', 'props':'background: #e0e0f0;'},
+
+        {'selector':'tbody tr:nth-child(23)', 'props':'background: #ffe0f0;'},
+        {'selector':'tbody tr:nth-child(24)', 'props':'background: #fffafa;'},
+        {'selector':'tbody tr:nth-child(25)', 'props':'background: #ffe0f0;'},
+
         {'selector':'tr', 'props':'line-height: 16px'},
         {'selector':'td', 'props':'white-space: nowrap;padding: 0px 5px 0px 0px;'},
         {'selector':'th', 'props':'padding: 0px 5px;'},
       ])
 
     key='''<br><p style='font-family:Louis George Cafe;font-size:12px'>
-           <img src="{}"></img> = possible move up<br>
-           <img src="{}"></img> = possible move down <br>
-           <img src="{}"></img> = possible move up (that requires a GD swing > 3)<br>
-           <img src="{}"></img> = possible move down (that requires a GD swing > 3)<br>
-           <img src="{}"></img> = impossible position (due to other fixtures)
+           <img src="{}"></img> possible move up<br>
+           <img src="{}"></img> possible move down <br>
+           <img src="{}"></img> possible move up (that requires a GD swing > 3)<br>
+           <img src="{}"></img> possible move down (that requires a GD swing > 3)<br>
+           <img src="{}"></img> impossible position (due to other fixtures)
            </p>'''.format( os.path.abspath("./img/likely_move.png"),
                            os.path.abspath("./img/likely_move_down.png"),
                            os.path.abspath("./img/unlikely_move.png"),
