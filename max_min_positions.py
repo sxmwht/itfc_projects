@@ -20,9 +20,9 @@ def choose_image(team, char):
     if char == 'i':
         return '<img src="{}"></img>'.format(os.path.abspath("./img/impossible.png"))
     if char == 'e':
-        return '<img src="{}"></img>'.format(os.path.abspath("./img/likely_move.png"))
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/likely_move_up.png"))
     if char == 'r':
-        return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move.png"))
+        return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move_up.png"))
     if char == 'b':
         return '<img src="{}"></img>'.format(os.path.abspath("./img/unlikely_move_down.png"))
     if char == 'c':
@@ -161,9 +161,9 @@ def run():
         #current_table = pd.read_html("debug_table.html", index_col=0, header=0)[1]
     else:
         current_table = pd.read_html(f"https://www.twtd.co.uk/league-tables/competition:{args.competition}/", index_col=0)[2]
-    current_table = current_table.drop([2,3,4,5,6,7,8,9,10,11,12,13,14,15],axis=1)
+    current_table = current_table.drop([3,4,5,6,7,8,9,10,11,12,13,14,15],axis=1)
 
-    current_table.columns=['Team','GD','Pts']
+    current_table.columns=['Team','P','GD','Pts']
 
     num_teams = len(current_table.Team)
 
@@ -200,9 +200,10 @@ def run():
         df[i+1] = [" "] + list(map(choose_image, repeat(team), team.positions))
 
     # construct an array of opponents
-    df[len(df[0])+1] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.Pts]
-    df[len(df[0])+2] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.GD]
-    df[len(df[0])+3] = ["Next Fixture"] + [f"<p style='font-style:italic'>vs {team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
+    df[len(df[0])+1] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.P]
+    df[len(df[0])+2] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.Pts]
+    df[len(df[0])+3] = [f"<p style='text-align:right'>{p}</p>" for p in current_table.GD]
+    df[len(df[0])+4] = ["Next Fixture"] + [f"<p style='font-style:italic'>{team.opponent.name} {'(h)' if team.is_at_home else '(a)'}</p>" if team.opponent is not None else "" for team in teams]
 
     styled_table = df.style.set_table_styles([
         {'selector':''  , 'props':'border-collapse: collapse; font-family:Louis George Cafe; font-size:12px;'},
@@ -236,9 +237,9 @@ def run():
            <img src="{}"></img> possible move up (that requires a GD swing > 3)<br>
            <img src="{}"></img> possible move down (that requires a GD swing > 3)<br>
            <img src="{}"></img> impossible position (due to other fixtures)
-           </p>'''.format( os.path.abspath("./img/likely_move.png"),
+           </p>'''.format( os.path.abspath("./img/likely_move_up.png"),
                            os.path.abspath("./img/likely_move_down.png"),
-                           os.path.abspath("./img/unlikely_move.png"),
+                           os.path.abspath("./img/unlikely_move_up.png"),
                            os.path.abspath("./img/unlikely_move_down.png"),
                            os.path.abspath("./img/impossible.png")
                         )
